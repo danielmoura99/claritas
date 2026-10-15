@@ -1,0 +1,25 @@
+{
+  "name": "@claritas/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Claritas API — Node.js + Fastify. Única ponte com provedores de dados de mercado (Binance Spot).",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "start": "tsx src/server.ts",
+    "build": "tsc --noEmit -p .",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@claritas/contracts": "0.1.0",
+    "@fastify/cors": "11.3.0",
+    "@fastify/websocket": "11.3.1",
+    "fastify": "5.12.5",
+    "tsx": "4.23.15",
+    "ws": "8.22.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/ws": "8.18.2"
+  }
+}

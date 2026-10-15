@@ -690,8 +690,8 @@ O agente executor deve trabalhar **incrementalmente e com evidências**:
 
 | Etapa | Status | Evidência/commit | Pendências |
 |---|---|---|---|
-| 0. Auditoria design system | **NÃO INICIADA** | — | Inspecionar raiz real e publicar `docs/DESIGN_SYSTEM_AUDIT.md` |
-| 1. Estrutura Node/Fastify + contratos | **NÃO INICIADA** | — | Criar sem mover Next |
+| 0. Auditoria design system | **CONCLUÍDA** (14/10) | `docs/DESIGN_SYSTEM_AUDIT.md`, `docs/screenshots/baseline/*` (9 capturas, 3 rotas × 3 viewports), commit `3363722` | — |
+| 1. Estrutura Node/Fastify + contratos | **CONCLUÍDA** (14/10) | npm workspaces `packages/*`,`services/*`; `packages/contracts` (Zod 4); `services/api` Fastify 5 com `/health` (curl 200 + `x-request-id`); `.env.example`; `npm test` 14/14, `typecheck`, `lint`, `next build` OK | — |
 | 2. Binance REST | **NÃO INICIADA** | — | Implementar provider real, testes |
 | 3. Binance WebSocket / Claritas stream | **NÃO INICIADA** | — | Subscription, reconexão, backfill |
 | 4. Chart live com identidade Claritas | **NÃO INICIADA** | — | Wrapper visual + screenshots |

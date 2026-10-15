@@ -31,7 +31,8 @@ const [syntaxLevel, ...selectors] = source.rules["no-restricted-syntax"];
 const adherence = [
   {
     name: "claritas/design-system-adherence",
-    files: ["**/*.{js,jsx,mjs,ts,tsx}"],
+    // UI code only: the API, contracts and scripts have no visual surface.
+    files: ["app/**/*.{js,jsx,mjs,ts,tsx}", "components/**/*.{js,jsx,mjs,ts,tsx}", "lib/**/*.{js,jsx,mjs,ts,tsx}"],
     ignores: INTERNALS,
     rules: {
       "react/forbid-elements": source.rules["react/forbid-elements"],

@@ -1,0 +1,16 @@
+{
+  "name": "@claritas/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contratos canônicos Claritas (tipos + schemas Zod) compartilhados entre a API e o frontend. Independentes do provedor de dados.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  }
+}
