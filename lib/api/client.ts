@@ -1,10 +1,12 @@
 import { z } from "@claritas/contracts";
 import {
+  AnalysisSchema,
   ApiErrorSchema,
   CandleSchema,
   MarketAssetSchema,
   QuoteSchema,
   marketEnvelope,
+  type Analysis,
   type Candle,
   type ErrorCode,
   type Interval,
@@ -61,6 +63,11 @@ export const marketApi = {
     apiGet(`/api/v1/market/assets?${qs({ search, limit: 30 })}`, marketEnvelope(z.array(MarketAssetSchema)), { signal }),
   asset: (symbol: string, signal?: AbortSignal): Promise<MarketEnvelope<MarketAsset>> =>
     apiGet(`/api/v1/market/assets/${encodeURIComponent(symbol)}`, marketEnvelope(MarketAssetSchema), { signal }),
+};
+
+export const analysisApi = {
+  get: (symbol: string, interval: Interval, signal?: AbortSignal): Promise<MarketEnvelope<Analysis>> =>
+    apiGet(`/api/v1/analysis?${qs({ symbol, interval })}`, marketEnvelope(AnalysisSchema), { signal }),
 };
 
 /** Mensagem curta, no tom Claritas, para cada erro. */

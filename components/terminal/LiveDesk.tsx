@@ -113,9 +113,7 @@ export function ChartStage({ overlays, footerExtra, live }: { overlays?: ChartOv
 }
 
 /** Pregão ao Vivo — grade do template: gráfico + leitura Claritas (380) / faixa de 4 widgets (260). */
-export function LiveDesk({ rail, widgets, overlays, footerExtra }: { rail: React.ReactNode; widgets: React.ReactNode; overlays?: ChartOverlays; footerExtra?: React.ReactNode }) {
-  const { symbol, interval } = useSelection();
-  const live = useLiveCandles(symbol, interval);
+export function LiveDesk({ live, rail, widgets, overlays, footerExtra }: { live: ReturnType<typeof useLiveCandles>; rail: React.ReactNode; widgets: React.ReactNode; overlays?: ChartOverlays; footerExtra?: React.ReactNode }) {
   return (
     // Abaixo de lg os painéis empilham com altura natural (a página rola); em desktop a grade ocupa a viewport.
     <div className="grid w-full min-w-0 grid-cols-1 content-start gap-2 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_23.75rem] lg:grid-rows-[minmax(0,1fr)_16.25rem] lg:content-stretch">

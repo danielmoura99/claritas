@@ -69,3 +69,28 @@ describe("Binance Spot REST real", () => {
     expect(Number(q.lowPrice)).toBeLessThanOrEqual(Number(q.highPrice));
   });
 });
+
+describe("Análise sobre dados reais", () => {
+  it("BTCUSDT/5m: indicadores com método, base só de barras fechadas, sem probabilidade", async () => {
+    const res = await app.inject("/api/v1/analysis?symbol=BTCUSDT&interval=5m");
+    expect(res.statusCode, res.body).toBe(200);
+    const a = res.json().data;
+    expect(a.basis.includesOpenCandle).toBe(false);
+    expect(a.basis.lastCloseTimeMs).toBeLessThan(Date.now());
+    expect(a.basis.candles).toBeGreaterThanOrEqual(400);
+    expect(["alta", "baixa", "indefinido"]).toContain(a.regime.state);
+    for (const i of a.indicators) {
+      expect(i.formula).toBeTruthy();
+      expect(i.value).not.toBeNull();
+    }
+    const hi = Number(a.levels[0].price), lo = Number(a.levels[1].price);
+    expect(hi).toBeGreaterThanOrEqual(lo);
+    expect(Object.keys(a)).not.toContain("confidence");
+  });
+
+  it("troca de timeframe muda a base da análise", async () => {
+    const h1 = (await app.inject("/api/v1/analysis?symbol=ETHUSDT&interval=1h")).json().data;
+    expect(h1.interval).toBe("1h");
+    expect(h1.basis.lastOpenTimeMs % 3_600_000).toBe(0);
+  });
+});

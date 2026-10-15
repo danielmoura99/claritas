@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { Candle, ServerMessage } from "@claritas/contracts";
-import { StreamHub, type StreamClient } from "../../src/modules/streaming/hub";
+import { StreamHub, type HubOptions, type StreamClient } from "../../src/modules/streaming/hub";
 import { FakeStreamSource } from "../helpers/fake-stream";
 import { FIVE_MIN, T0 } from "../fixtures/binance";
 
@@ -35,7 +35,7 @@ class Recorder implements StreamClient {
 
 let now = T0;
 let source: FakeStreamSource;
-let fetchRecent: ReturnType<typeof vi.fn>;
+let fetchRecent: Mock<HubOptions["fetchRecentCandles"]>;
 let hub: StreamHub;
 
 const emit = (c: Candle, eventOffset = 1000) => source.handlers.onCandle({ candle: c, eventTimeMs: c.openTimeMs + eventOffset, receivedAtMs: now });
@@ -44,7 +44,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   now = T0;
   source = new FakeStreamSource();
-  fetchRecent = vi.fn(async () => [] as Candle[]);
+  fetchRecent = vi.fn<HubOptions["fetchRecentCandles"]>(async () => []);
   hub = new StreamHub({ source, provider: "binance_spot", staleAfterMs: 15_000, lingerMs: 30_000, fetchRecentCandles: fetchRecent, now: () => now });
   hub.start();
   source.connect();

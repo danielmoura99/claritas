@@ -13,6 +13,8 @@ import { streamingRoutes } from "./modules/streaming/routes";
 import { BinanceSpotProvider } from "./providers/binance/binance-provider";
 import { MarketService } from "./modules/market/market-service";
 import { marketRoutes } from "./modules/market/routes";
+import { AnalysisService } from "./modules/analysis/analysis-service";
+import { analysisRoutes } from "./modules/analysis/routes";
 
 export interface AppOptions {
   env: Env;
@@ -86,6 +88,8 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
   });
 
   await app.register(marketRoutes, { prefix: "/api/v1/market", market });
+  const analysis = new AnalysisService(market);
+  await app.register(analysisRoutes, { prefix: "/api/v1/analysis", analysis });
 
   let clockOffsetMs = 0;
   const refreshClockOffset = async () => {
