@@ -1,0 +1,107 @@
+/* Claritas — light theme (DERIVED, provisional).
+   The original Claritas system is dark-only ("Claritas Terminal, desktop, dark"). This theme was derived on import
+   so the project can render both themes. It only remaps SEMANTIC tokens onto the existing palette — no new hues.
+   Rules kept: Sand is still the analysis voice; direction is still carried by ▲▼ and + / − as well as color.
+   In light, "up" can't be bone (invisible on paper), so up = graphite ink and down = clay.
+   Activate with data-theme="light" on <html> or on any wrapper (theme islands are supported). */
+[data-theme="light"]{
+--bg-app:var(--ink-100);
+--surface-inset:var(--ink-50);
+--surface-panel:var(--ink-0);
+--surface-raised:var(--ink-0);
+--surface-hover:var(--ink-100);
+--surface-active:var(--ink-200);
+--surface-overlay:rgba(16,16,16,.32);
+
+--border-subtle:rgba(0,0,0,.07);
+--border-default:rgba(0,0,0,.11);
+--border-strong:rgba(0,0,0,.2);
+--border-focus:var(--sand-600);
+
+--text-primary:var(--ink-950);
+--text-secondary:var(--ink-600);
+--text-tertiary:var(--ink-500);
+--text-disabled:var(--ink-400);
+--text-on-accent:var(--ink-50);
+--text-inverse:var(--ink-50);
+
+--accent:var(--sand-600);
+--accent-hover:var(--sand-500);
+--accent-pressed:var(--sand-700);
+--accent-tint:rgba(140,118,85,.10);
+--accent-tint-strong:rgba(140,118,85,.18);
+--accent-line:rgba(140,118,85,.45);
+
+--market-up:var(--ink-800);
+--market-up-text:var(--ink-850);
+--market-up-tint:rgba(0,0,0,.06);
+--market-down:var(--down-600);
+--market-down-text:var(--down-600);
+--market-down-tint:rgba(147,89,74,.10);
+--market-flat:var(--ink-500);
+
+--status-info:var(--info-500);
+--status-info-tint:rgba(122,135,148,.12);
+--status-warn:var(--warn-500);
+--status-warn-tint:rgba(207,148,102,.14);
+
+--chart-bg:transparent;
+--chart-grid:rgba(0,0,0,.05);
+--chart-axis-text:var(--ink-400);
+--chart-crosshair:rgba(58,58,56,.4);
+--candle-up:var(--ink-800);
+--candle-down:var(--ink-300);
+--chart-volume-up:rgba(0,0,0,.13);
+--chart-volume-down:rgba(0,0,0,.06);
+--chart-ma-fast:var(--sand-600);
+--chart-ma-slow:var(--ink-400);
+--annotation:var(--sand-600);
+--annotation-zone:rgba(140,118,85,.08);
+--annotation-label-bg:var(--sand-100);
+
+/* component aliases */
+--tint-neutral:rgba(0,0,0,.05);
+--tint-neutral-subtle:rgba(0,0,0,.035);
+--market-flat-tint:rgba(0,0,0,.045);
+--market-up-line:rgba(27,27,27,.4);
+--market-down-line:rgba(147,89,74,.45);
+--status-info-line:rgba(122,135,148,.5);
+--status-warn-line:rgba(207,148,102,.5);
+--text-on-up:var(--ink-50);
+--text-on-down:var(--ink-0);
+--text-on-info:var(--ink-0);
+--text-on-warn:#1E0D02;
+--order-buy:var(--ink-800);--order-buy-hover:var(--ink-700);--order-buy-pressed:var(--ink-900);
+--order-sell:var(--down-500);--order-sell-hover:var(--down-400);--order-sell-pressed:var(--down-600);
+--kbd-bg:rgba(0,0,0,.08);
+--track:var(--ink-200);
+--tooltip-bg:var(--ink-900);
+--tooltip-fg:var(--ink-50);
+--switch-knob-on:var(--ink-0);
+--switch-knob-off:var(--ink-400);
+--chart-baseline:var(--ink-300);
+--chart-prior:var(--ink-300);
+--chart-watermark:rgba(0,0,0,.04);
+--chart-zone-neutral:rgba(0,0,0,.03);
+--chart-last-fg:var(--ink-50);
+--chart-crosshair-label-bg:var(--ink-800);
+--chart-crosshair-label-fg:var(--ink-50);
+--scan-edge:rgba(140,118,85,.8);
+--flash-up-bg:rgba(0,0,0,.1);--flash-up-fg:var(--ink-950);
+--flash-down-bg:rgba(196,122,102,.22);--flash-down-fg:var(--down-600);
+
+/* effects */
+--highlight-top:inset 0 1px 0 rgba(255,255,255,.7);
+--shadow-panel:0 1px 2px rgba(0,0,0,.04),0 0 0 1px var(--border-subtle);
+--shadow-raised:0 1px 2px rgba(0,0,0,.08),0 0 0 1px var(--border-default);
+--shadow-pop:0 16px 40px -12px rgba(0,0,0,.22),0 4px 12px -4px rgba(0,0,0,.12),0 0 0 1px var(--border-default);
+--shadow-dialog:0 32px 80px -16px rgba(0,0,0,.3),0 0 0 1px var(--border-default);
+--glow-sand:0 0 0 1px rgba(140,118,85,.5),0 0 28px -6px rgba(140,118,85,.4);
+--glow-sand-soft:0 0 0 1px rgba(140,118,85,.3),0 0 18px -8px rgba(140,118,85,.3);
+--glow-up:0 0 0 1px rgba(27,27,27,.25),0 0 24px -8px rgba(27,27,27,.2);
+--glow-down:0 0 0 1px rgba(147,89,74,.4),0 0 24px -6px rgba(147,89,74,.35);
+--focus-ring:0 0 0 2px var(--bg-app),0 0 0 4px rgba(140,118,85,.7);
+--glass-bg:rgba(255,255,255,.84);
+--grid-dots:radial-gradient(rgba(0,0,0,.09) 1px,transparent 1.2px);/* @kind other */
+--scan-beam:linear-gradient(90deg,rgba(140,118,85,0) 0%,rgba(140,118,85,.06) 70%,rgba(140,118,85,.28) 98%,rgba(94,79,57,.6) 100%);/* @kind other */
+}

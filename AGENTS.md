@@ -7,3 +7,19 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Design system
+
+- [`DESIGN.md`](DESIGN.md) (root, versioned) is the visual contract and the source of truth for tokens (Google Stitch DESIGN.md format). Read it before any UI work. If a token changes, update `DESIGN.md` and `design-system/tokens/` together.
+- New UI comes from the library in [`design-system/`](design-system/README.md): import from `@/design-system`, never from component internals. A component that doesn't exist yet is created inside `design-system/components/<group>/`, not in `app/`.
+- Never hardcode color, font, spacing or radius values in app code. Use `var(--token)` or the token-mapped Tailwind utilities (`bg-panel`, `text-fg-secondary`, `border-line`, `text-accent`, `rounded-md`, `shadow-pop`…). The default Tailwind palette is disabled. `npm run lint` runs the design-system adherence rules (`design-system/lint/`).
+- Library map — see [`design-system/README.md`](design-system/README.md) for details and the step-by-step to add a component:
+  - `design-system/tokens/` — CSS tokens (colors, typography, spacing, effects, motion, base, light theme); app entry `tokens/index.css`.
+  - `design-system/components/{core,forms,navigation,feedback,market,charts,analysis}/` — 29 typed components, each `Name.tsx` + `Name.md`.
+  - `design-system/templates/terminal/` — Claritas Terminal composition template.
+  - `design-system/lib/` — pt-BR formatting, deterministic RNG, `useTween`.
+  - `design-system/assets/` — fonts and Lucide icons.
+  - `design-system/lint/` — adherence rules (oxlint JSON, applied to ESLint).
+  - `design-system/reference/` — standalone visual reference HTMLs (guidelines, component cards, terminal UI kit); open directly in a browser. Not app code.
+- Showcase: `/design-system` renders every component, state and both themes (`data-theme="dark"` canonical, `"light"` derived). Add new components there.
+- Copy is pt-BR, analyst voice, numbers in Geist Mono with pt-BR formatting (see `DESIGN.md` → Typography).

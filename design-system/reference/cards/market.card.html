@@ -1,0 +1,35 @@
+<!-- @dsCard group="Components" viewport="700x290" name="Market" subtitle="TickerTape · WatchRow · PriceTicker · Delta" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="../vendor/react.development.js"></script>
+<script src="../vendor/react-dom.development.js"></script>
+<script src="../vendor/babel.min.js"></script>
+<script src="../vendor/ds-bundle.js"></script>
+<style>body{padding:20px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--text-label);letter-spacing:var(--label-track);text-transform:uppercase;color:var(--text-tertiary);width:84px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const DS = window.ClaritasDesignSystem_c8f168;
+
+const { TickerTape, WatchRow, PriceTicker, Delta } = DS;
+const walk=(n,seed,v)=>{let s=seed*9301+49297,p=100,a=[];const r=()=>(s=(s*16807)%2147483647)/2147483647;for(let i=0;i<n;i++){p*=1+(r()-0.5+v*40)*0.012;a.push(p)}return a};
+const BASE=[{symbol:'IBOV',price:131420,change:0.42,decimals:0},{symbol:'PETR4',price:38.42,change:1.21,signal:true},{symbol:'VALE3',price:61.27,change:-0.64},{symbol:'ITUB4',price:34.18,change:0.33},{symbol:'WEGE3',price:52.90,change:2.08,signal:true},{symbol:'BBAS3',price:27.61,change:-1.12},{symbol:'USDBRL',price:5.4321,change:-0.21,decimals:4}];
+function App(){
+ const [items,setItems]=React.useState(BASE);
+ React.useEffect(()=>{const id=setInterval(()=>setItems(it=>it.map(x=>Math.random()<.5?x:{...x,price:x.price*(1+(Math.random()-.5)*0.002),change:x.change+(Math.random()-.5)*0.06})),900);return()=>clearInterval(id)},[]);
+ const p=items[1];
+ return(<div className="col" style={{gap:16}}>
+ <TickerTape items={items} speed={40} style={{borderRadius:'var(--radius-md)',border:'1px solid var(--border-subtle)'}} />
+ <div style={{display:'grid',gridTemplateColumns:'320px 1fr',gap:20}}>
+  <div style={{background:'var(--surface-panel)',borderRadius:'var(--radius-lg)',padding:4,boxShadow:'var(--shadow-panel)'}}>
+   <WatchRow symbol="PETR4" name="Petrobras PN" price={p.price} change={p.change} series={walk(40,3,0.004)} selected signal="up" />
+   <WatchRow symbol="VALE3" name="Vale ON" price={items[2].price} change={items[2].change} series={walk(40,5,-0.003)} />
+   <WatchRow symbol="WEGE3" name="WEG ON" price={items[4].price} change={items[4].change} series={walk(40,2,0.005)} signal />
+   <WatchRow dense symbol="BBAS3" price={items[5].price} change={items[5].change} series={walk(40,7,-0.004)} />
+  </div>
+  <div className="col" style={{gap:14,justifyContent:'center'}}>
+   <div className="col" style={{gap:8}}><span className="lbl" style={{width:'auto'}}>PETR4 · último</span><div className="row" style={{gap:14,alignItems:'baseline'}}><PriceTicker value={p.price} prefix="R$" size="xl" /><Delta value={p.change} variant="pill" size="lg" /></div></div>
+   <div className="row" style={{gap:14}}><PriceTicker value={items[0].price} decimals={0} prefix="pts" size="lg" /><Delta value={0.42} /><Delta value={-1.12} /><Delta value={0} /><Delta value={-0.38} kind="abs" size="sm" /><Delta value={25} kind="bps" size="sm" arrow={false} /></div>
+  </div>
+ </div></div>)}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

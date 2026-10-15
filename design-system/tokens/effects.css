@@ -1,0 +1,25 @@
+/* Claritas — elevation, glow, focus. Dark UI: depth comes from borders + a hairline top highlight, not big drop shadows.
+   Glows are reserved for LIVE things (a new signal, the analysis beam, a ticking price). */
+:root,[data-theme="dark"]{
+--highlight-top:inset 0 1px 0 rgba(255,255,255,.04);/* @kind shadow */
+--shadow-panel:inset 0 1px 0 rgba(255,255,255,.04),0 0 0 1px var(--border-subtle);
+--shadow-raised:inset 0 1px 0 rgba(255,255,255,.05),0 1px 2px rgba(0,0,0,.4),0 0 0 1px var(--border-default);
+--shadow-pop:0 16px 40px -12px rgba(0,0,0,.7),0 4px 12px -4px rgba(0,0,0,.5),0 0 0 1px var(--border-default);
+--shadow-dialog:0 32px 80px -16px rgba(0,0,0,.8),0 0 0 1px var(--border-strong);
+
+--glow-sand:0 0 0 1px rgba(200,178,142,.45),0 0 28px -6px rgba(200,178,142,.5);
+--glow-sand-soft:0 0 0 1px rgba(200,178,142,.25),0 0 18px -8px rgba(200,178,142,.35);
+--glow-up:0 0 0 1px rgba(230,224,213,.3),0 0 24px -8px rgba(230,224,213,.3);
+--glow-down:0 0 0 1px rgba(196,122,102,.4),0 0 24px -6px rgba(196,122,102,.45);
+
+--focus-ring:0 0 0 2px var(--bg-app),0 0 0 4px rgba(200,178,142,.7);
+
+--blur-overlay:blur(10px) saturate(1.2);/* @kind other */
+--blur-glass:blur(16px) saturate(1.4);/* @kind other */
+--glass-bg:rgba(16,16,16,.78);
+
+/* Backgrounds */
+--grid-dots:radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.2px);/* @kind other */
+--grid-dots-size:16px 16px;/* @kind other */
+--scan-beam:linear-gradient(90deg,rgba(200,178,142,0) 0%,rgba(200,178,142,.06) 70%,rgba(200,178,142,.32) 98%,rgba(243,237,226,.7) 100%);/* @kind other */
+}

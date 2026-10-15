@@ -1,0 +1,12 @@
+/* Claritas tokens — entry point for the Next app (imported by app/globals.css).
+   fonts.css is NOT imported here: in the app, fonts are loaded by next/font in app/layout.tsx and
+   wired to --font-sans / --font-mono / --font-serif in app/globals.css. fonts.css + assets/fonts serve the
+   standalone reference HTMLs (design-system/reference/styles.css). */
+@import "./colors.css";
+@import "./typography.css";
+@import "./spacing.css";
+@import "./effects.css";
+@import "./motion.css";
+@import "./theme-light.css";
+/* Element defaults go in Tailwind's base layer so utility classes can still override them. */
+@import "./base.css" layer(base);

@@ -1,0 +1,27 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Analysis" subtitle="SignalCard · SentimentGauge · MetricRow · ConfidenceMeter" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="../vendor/react.development.js"></script>
+<script src="../vendor/react-dom.development.js"></script>
+<script src="../vendor/babel.min.js"></script>
+<script src="../vendor/ds-bundle.js"></script>
+<style>body{padding:16px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--text-label);letter-spacing:var(--label-track);text-transform:uppercase;color:var(--text-tertiary);width:84px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const DS = window.ClaritasDesignSystem_c8f168;
+
+const { SignalCard, ConfidenceMeter, SentimentGauge, MetricRow } = DS;
+function App(){
+ const [k,setK]=React.useState(0);
+ const [g,setG]=React.useState(64);
+ React.useEffect(()=>{const id=setInterval(()=>setK(x=>x+1),7000);const j=setInterval(()=>setG(x=>Math.max(20,Math.min(92,x+(Math.random()-.45)*8))),1400);return()=>{clearInterval(id);clearInterval(j)}},[]);
+ return(<div style={{display:'grid',gridTemplateColumns:'minmax(0,1.3fr) minmax(0,1fr)',gap:14,alignItems:'start'}}>
+ <SignalCard key={k} fresh kind="buy" symbol="VALE3" timeframe="15m" time="14:32" title="Rompimento confirmado acima de R$ 61,20" body="Fechamento acima da resistência de três testes, com volume 2,1× a média de 20 períodos. MM9 cruzou a MM21 para cima há duas velas." levels={[{label:'Entrada',value:'61,25'},{label:'Alvo',value:'62,40',tone:'up'},{label:'Stop',value:'60,70',tone:'down'}]} confidence={78} />
+ <div className="col" style={{gap:10}}>
+  <SignalCard compact kind="sell" symbol="BBAS3" timeframe="5m" time="14:18" title="Perdeu a VWAP e a mínima do dia" confidence={64} />
+  <div style={{display:'grid',placeItems:'center',padding:'6px 0'}}><SentimentGauge value={g} size={180} /></div>
+  <div><MetricRow icon="trending-up" label="Regime atual" value="Tendência de alta" /><MetricRow icon="target" label="Próximo alvo" value="62,40" sub="+1,8%" /><MetricRow dense icon="globe" label="Fluxo estrangeiro" value="−R$ 84 mi" tone="down" /></div>
+  <ConfidenceMeter value={66} />
+ </div></div>)}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

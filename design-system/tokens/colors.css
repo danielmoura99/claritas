@@ -1,0 +1,104 @@
+/* Claritas — color tokens. Monochrome desk: black, graphite, gray, bone white — plus Sand (beige) as the analysis voice.
+   Voices: INK = interface · BONE/GRAPHITE = the tape (up / down candles) · CLAY = negative · SAND = what Claritas concluded. */
+:root,[data-theme="dark"]{
+/* Ink — true neutrals, a hair warm so they sit with sand */
+--ink-950:#0A0A0A;--ink-900:#101010;--ink-850:#151515;--ink-800:#1B1B1B;--ink-750:#222221;--ink-700:#2B2B2A;--ink-600:#3A3A38;--ink-500:#5C5B58;--ink-400:#86847F;--ink-300:#ADABA6;--ink-200:#D0CEC9;--ink-100:#EDECE9;--ink-50:#F7F6F3;
+/* Sand — the analysis voice (brand accent). Light-to-medium beige. */
+--sand-100:#F3EDE2;--sand-200:#E8DDCB;--sand-300:#D9C9AE;--sand-400:#C8B28E;--sand-500:#AE9570;--sand-600:#8C7655;--sand-700:#5E4F39;--sand-900:#1E1A13;
+/* Market — up = bone, down = clay (muted terracotta). No saturated green/red. */
+--up-300:#F7F4EE;--up-400:#ECE7DE;--up-500:#DED8CC;--up-600:#B8B2A6;--up-900:#1D1C19;
+--down-300:#E6B3A4;--down-400:#D4917E;--down-500:#C47A66;--down-600:#93594A;--down-900:#261613;
+/* Support — steel (info) and ochre (warn), both desaturated */
+--info-300:#C3CBD3;--info-400:#9BA7B4;--info-500:#7A8794;--info-900:#15181B;
+--warn-400:#E0B08A;--warn-500:#CF9466;--warn-900:#24180F;
+
+/* ---------- Semantic aliases ---------- */
+--bg-app:var(--ink-950);
+--surface-inset:#070707;
+--surface-panel:#0F0F0F;
+--surface-raised:var(--ink-850);
+--surface-hover:var(--ink-800);
+--surface-active:var(--ink-750);
+--surface-overlay:rgba(5,5,5,.72);
+
+--border-subtle:rgba(255,255,255,.055);
+--border-default:rgba(255,255,255,.09);
+--border-strong:rgba(255,255,255,.16);
+--border-focus:var(--sand-400);
+
+--text-primary:var(--ink-100);
+--text-secondary:var(--ink-300);
+--text-tertiary:var(--ink-400);
+--text-disabled:var(--ink-500);
+--text-on-accent:#14110C;
+--text-inverse:var(--ink-950);
+
+--accent:var(--sand-400);
+--accent-hover:var(--sand-300);
+--accent-pressed:var(--sand-500);
+--accent-tint:rgba(200,178,142,.10);
+--accent-tint-strong:rgba(200,178,142,.18);
+--accent-line:rgba(200,178,142,.42);
+
+--market-up:var(--up-500);
+--market-up-text:var(--up-400);
+--market-up-tint:rgba(230,224,213,.08);
+--market-down:var(--down-500);
+--market-down-text:var(--down-400);
+--market-down-tint:rgba(196,122,102,.12);
+--market-flat:var(--ink-400);
+
+--status-info:var(--info-400);
+--status-info-tint:rgba(155,167,180,.12);
+--status-warn:var(--warn-500);
+--status-warn-tint:rgba(207,148,102,.12);
+
+/* Chart grammar */
+--chart-bg:transparent;
+--chart-grid:rgba(255,255,255,.04);
+--chart-axis-text:var(--ink-500);
+--chart-crosshair:rgba(173,171,166,.4);
+--candle-up:var(--up-500);
+--candle-down:var(--ink-500);
+--chart-volume-up:rgba(255,255,255,.13);
+--chart-volume-down:rgba(255,255,255,.07);
+--chart-ma-fast:var(--sand-400);
+--chart-ma-slow:var(--ink-400);
+--annotation:var(--sand-400);
+--annotation-zone:rgba(200,178,142,.07);
+--annotation-label-bg:var(--sand-900);
+
+/* ---------- Component aliases (added on import into the project) ----------
+   Values that used to be hardcoded inside components. Same values as before in the dark theme;
+   theme-light.css overrides them. Components must reference these, never raw rgba/hex. */
+--ink-0:#FFFFFF;
+--tint-neutral:rgba(255,255,255,.06);
+--tint-neutral-subtle:rgba(255,255,255,.04);
+--market-flat-tint:rgba(255,255,255,.05);
+--market-up-line:rgba(230,224,213,.45);
+--market-down-line:rgba(196,122,102,.45);
+--status-info-line:rgba(155,167,180,.45);
+--status-warn-line:rgba(207,148,102,.45);
+--text-on-up:#03140D;
+--text-on-down:#FFFFFF;
+--text-on-info:#FFFFFF;
+--text-on-warn:#1E0D02;
+--order-buy:var(--up-500);--order-buy-hover:var(--up-400);--order-buy-pressed:var(--up-600);
+--order-sell:var(--down-500);--order-sell-hover:var(--down-400);--order-sell-pressed:var(--down-600);
+--kbd-bg:rgba(0,0,0,.18);
+--track:var(--ink-700);
+--tooltip-bg:var(--ink-700);
+--tooltip-fg:var(--text-primary);
+--switch-knob-on:var(--ink-950);
+--switch-knob-off:var(--ink-400);
+--chart-baseline:var(--ink-600);
+--chart-prior:var(--ink-500);
+--chart-watermark:rgba(255,255,255,.035);
+--chart-zone-neutral:rgba(255,255,255,.03);
+--chart-last-fg:var(--ink-950);
+--chart-crosshair-label-bg:var(--ink-600);
+--chart-crosshair-label-fg:var(--ink-50);
+--scan-edge:rgba(243,237,226,.8);
+--flash-up-bg:rgba(230,224,213,.32);--flash-up-fg:var(--up-300);
+--flash-down-bg:rgba(196,122,102,.32);--flash-down-fg:var(--down-300);
+}

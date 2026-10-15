@@ -1,26 +1,111 @@
 @import "tailwindcss";
+/* Claritas design system — DESIGN.md (root) is the contract; tokens live in design-system/tokens. */
+@import "../design-system/tokens/index.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Reference HTMLs are standalone pages, not app sources. */
+@source not "../design-system/reference";
+
+/* `dark:` follows the design-system theme attribute instead of the OS preference. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root,
+[data-theme] {
+  --background: var(--bg-app);
+  --foreground: var(--text-primary);
 }
 
+/* Fonts are loaded by next/font (app/layout.tsx); the design-system font tokens point at them. */
+:root {
+  --font-sans: var(--font-geist-sans), "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-serif: var(--font-instrument-serif), "Instrument Serif", "Iowan Old Style", Georgia, serif;
+}
+
+/* Tailwind utilities map to design-system tokens only. The default Tailwind palette is disabled
+   so no raw color can be used by accident (see DESIGN.md → Do's and Don'ts). */
 @theme inline {
+  --color-*: initial;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* surfaces */
+  --color-app: var(--bg-app);
+  --color-inset: var(--surface-inset);
+  --color-panel: var(--surface-panel);
+  --color-raised: var(--surface-raised);
+  --color-hover: var(--surface-hover);
+  --color-active: var(--surface-active);
+  --color-overlay: var(--surface-overlay);
+  --color-tint: var(--tint-neutral);
+
+  /* text */
+  --color-fg: var(--text-primary);
+  --color-fg-secondary: var(--text-secondary);
+  --color-fg-tertiary: var(--text-tertiary);
+  --color-fg-disabled: var(--text-disabled);
+  --color-on-accent: var(--text-on-accent);
+  --color-inverse: var(--text-inverse);
+
+  /* borders */
+  --color-line-subtle: var(--border-subtle);
+  --color-line: var(--border-default);
+  --color-line-strong: var(--border-strong);
+  --color-focus: var(--border-focus);
+
+  /* sand = the analysis voice */
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-pressed: var(--accent-pressed);
+  --color-accent-tint: var(--accent-tint);
+  --color-accent-tint-strong: var(--accent-tint-strong);
+  --color-accent-line: var(--accent-line);
+
+  /* market */
+  --color-up: var(--market-up);
+  --color-up-text: var(--market-up-text);
+  --color-up-tint: var(--market-up-tint);
+  --color-down: var(--market-down);
+  --color-down-text: var(--market-down-text);
+  --color-down-tint: var(--market-down-tint);
+  --color-flat: var(--market-flat);
+  --color-info: var(--status-info);
+  --color-info-tint: var(--status-info-tint);
+  --color-warn: var(--status-warn);
+  --color-warn-tint: var(--status-warn-tint);
+
+  /* raw palette (prefer the semantic names above) */
+  --color-ink-0: var(--ink-0);
+  --color-ink-50: var(--ink-50);
+  --color-ink-100: var(--ink-100);
+  --color-ink-200: var(--ink-200);
+  --color-ink-300: var(--ink-300);
+  --color-ink-400: var(--ink-400);
+  --color-ink-500: var(--ink-500);
+  --color-ink-600: var(--ink-600);
+  --color-ink-700: var(--ink-700);
+  --color-ink-750: var(--ink-750);
+  --color-ink-800: var(--ink-800);
+  --color-ink-850: var(--ink-850);
+  --color-ink-900: var(--ink-900);
+  --color-ink-950: var(--ink-950);
+  --color-sand-100: var(--sand-100);
+  --color-sand-200: var(--sand-200);
+  --color-sand-300: var(--sand-300);
+  --color-sand-400: var(--sand-400);
+  --color-sand-500: var(--sand-500);
+  --color-sand-600: var(--sand-600);
+  --color-sand-700: var(--sand-700);
+  --color-sand-900: var(--sand-900);
+
+  /* elevation (radius-*, font-*, ease-* already resolve to design-system tokens) */
+  --shadow-panel: var(--shadow-panel);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-pop: var(--shadow-pop);
+  --shadow-dialog: var(--shadow-dialog);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font: var(--text-body);
 }

@@ -1,0 +1,23 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Forms" subtitle="Input · Select · Checkbox · Switch" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="../vendor/react.development.js"></script>
+<script src="../vendor/react-dom.development.js"></script>
+<script src="../vendor/babel.min.js"></script>
+<script src="../vendor/ds-bundle.js"></script>
+<style>body{padding:20px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--text-label);letter-spacing:var(--label-track);text-transform:uppercase;color:var(--text-tertiary);width:84px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const DS = window.ClaritasDesignSystem_c8f168;
+
+const { Input, Select, Checkbox, Switch } = DS;
+function App(){return(<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18}}>
+<Input icon="search" placeholder="Buscar ativo, setor ou índice" kbd="/" />
+<Select icon="list" options={['Ibovespa','Small caps','Minha carteira']} />
+<Input label="Preço do alerta" prefix="R$" mono defaultValue="38,90" hint="Último: 38,42" />
+<Input label="Quantidade" mono defaultValue="1.500" error="Acima do limite da conta" suffix="ações" />
+<div className="col"><Checkbox defaultChecked label="Rompimento de resistência" description="Fechamento acima do nível com volume" /><Checkbox label="Divergência de IFR" /><Checkbox indeterminate label="Padrões de candle (3 de 8)" /></div>
+<div className="col"><Switch defaultChecked label="Análise automática" /><Switch label="Som nos alertas" /><Switch size="sm" tone="up" defaultChecked label="Mostrar volume" /><Switch disabled label="After-market (indisponível)" /></div>
+</div>)}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

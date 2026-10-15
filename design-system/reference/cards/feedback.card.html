@@ -1,0 +1,26 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Feedback" subtitle="LiveIndicator · Toast · Dialog" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="../vendor/react.development.js"></script>
+<script src="../vendor/react-dom.development.js"></script>
+<script src="../vendor/babel.min.js"></script>
+<script src="../vendor/ds-bundle.js"></script>
+<style>body{padding:20px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--text-label);letter-spacing:var(--label-track);text-transform:uppercase;color:var(--text-tertiary);width:84px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const DS = window.ClaritasDesignSystem_c8f168;
+
+const { LiveIndicator, Toast, Dialog, Button, Input } = DS;
+function App(){return(<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18}}>
+<div className="col" style={{gap:12}}>
+<div className="row" style={{gap:18}}><LiveIndicator status="live" detail="14:32:07" /><LiveIndicator status="analyzing" label="Lendo 84 ativos" /></div>
+<div className="row" style={{gap:18}}><LiveIndicator status="pre" detail="09:45" /><LiveIndicator status="auction" /><LiveIndicator status="closed" /><LiveIndicator status="delayed" size="sm" /></div>
+<Toast tone="sand" title="Novo sinal em VALE3" message="Rompimento de R$ 61,20 com volume 2,1× a média." meta="14:32" action="Ver no gráfico" onClose={()=>{}} />
+<Toast tone="down" title="Alerta atingido · PETR4" message="Preço cruzou R$ 38,00 para baixo." meta="14:28" onClose={()=>{}} />
+</div>
+<Dialog inline title="Criar alerta" eyebrow="PETR4 · Petrobras PN" onClose={()=>{}} width={320} footer={<><Button variant="ghost" size="sm">Cancelar</Button><Button variant="primary" size="sm">Criar alerta</Button></>}>
+<div className="col" style={{gap:12}}><Input label="Quando o preço cruzar" prefix="R$" mono defaultValue="38,90" /><span style={{font:'var(--text-caption)',color:'var(--text-tertiary)'}}>Claritas avisa e anexa a leitura do gráfico no momento.</span></div>
+</Dialog>
+</div>)}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

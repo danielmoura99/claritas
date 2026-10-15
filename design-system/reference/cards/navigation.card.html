@@ -1,0 +1,19 @@
+<!-- @dsCard group="Components" viewport="700x170" name="Navigation" subtitle="Tabs · SegmentedControl" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="../vendor/react.development.js"></script>
+<script src="../vendor/react-dom.development.js"></script>
+<script src="../vendor/babel.min.js"></script>
+<script src="../vendor/ds-bundle.js"></script>
+<style>body{padding:20px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--text-label);letter-spacing:var(--label-track);text-transform:uppercase;color:var(--text-tertiary);width:84px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const DS = window.ClaritasDesignSystem_c8f168;
+
+const { Tabs, SegmentedControl } = DS;
+function App(){return(<div className="col" style={{gap:20}}>
+<Tabs items={[{value:'s',label:'Sinais',icon:'sparkles',count:12},{value:'p',label:'Padrões',count:4},{value:'n',label:'Notícias'},{value:'f',label:'Fundamentos'}]} />
+<div className="row" style={{gap:14}}><SegmentedControl options={['1m','5m','15m','1h','D','S']} defaultValue="5m" /><SegmentedControl mono={false} options={[{value:'c',label:'Velas'},{value:'l',label:'Linha'},{value:'a',label:'Área'}]} /><SegmentedControl size="sm" options={['Hoje','5D','1M','1A']} defaultValue="Hoje" /></div>
+</div>)}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

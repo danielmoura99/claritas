@@ -1,0 +1,25 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Core" subtitle="Button · IconButton · Badge · Panel · Tooltip · Wordmark · Icon" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="../vendor/react.development.js"></script>
+<script src="../vendor/react-dom.development.js"></script>
+<script src="../vendor/babel.min.js"></script>
+<script src="../vendor/ds-bundle.js"></script>
+<style>body{padding:20px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--text-label);letter-spacing:var(--label-track);text-transform:uppercase;color:var(--text-tertiary);width:84px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const DS = window.ClaritasDesignSystem_c8f168;
+
+const { Button, IconButton, Badge, Panel, Wordmark, Icon, Tooltip } = DS;
+function App(){return(<div className="col">
+<div className="row"><span className="lbl">Button</span><Button variant="primary" icon="sparkles">Analisar agora</Button><Button>Secundário</Button><Button variant="outline" icon="bell">Criar alerta</Button><Button variant="ghost" icon="download">Exportar</Button></div>
+<div className="row"><span className="lbl">Ordem</span><Button variant="buy">Comprar</Button><Button variant="sell">Vender</Button><Button size="sm" icon="search" kbd="⌘K">Buscar</Button><Button size="lg" variant="primary" iconRight="arrow-up-right">Abrir terminal</Button><Button loading>Carregando</Button><Button disabled>Inativo</Button></div>
+<div className="row"><span className="lbl">IconButton</span><IconButton icon="crosshair" label="Mira" active /><IconButton icon="pencil" label="Tendência" /><IconButton icon="ruler" label="Régua" /><IconButton icon="layers" label="Indicadores" /><IconButton icon="bell" label="Alertas" badge /><IconButton icon="maximize-2" label="Tela cheia" variant="secondary" /><IconButton icon="settings" label="Ajustes" size="sm" /></div>
+<div className="row"><span className="lbl">Badge</span><Badge tone="up" icon="trending-up">Compra</Badge><Badge tone="down" icon="trending-down">Venda</Badge><Badge tone="sand" dot>Claritas</Badge><Badge tone="info">Fato relevante</Badge><Badge tone="warn">Leilão</Badge><Badge>5m</Badge><Badge variant="outline" tone="sand">Rompimento</Badge><Badge variant="solid" tone="up" size="sm">Alvo 1</Badge></div>
+<div className="row" style={{alignItems:'stretch'}}><span className="lbl" style={{paddingTop:14}}>Panel</span>
+<Panel eyebrow="Watchlist" title="Ibovespa" actions={<IconButton icon="ellipsis" label="Mais" size="sm" />} style={{width:240}}><span style={{font:'var(--text-caption)',color:'var(--text-tertiary)'}}>Corpo do painel</span></Panel>
+<Panel glow="sand" eyebrow="Claritas" title="Lendo o pregão…" style={{width:220}}><span style={{font:'var(--text-caption)',color:'var(--text-tertiary)'}}>glow="sand"</span></Panel>
+<div className="col" style={{justifyContent:'center',gap:10}}><Wordmark size={26} /><Wordmark size={16} product="Terminal" /><div className="row" style={{gap:8,color:'var(--text-secondary)'}}><Icon name="chart-candlestick"/><Icon name="activity"/><Icon name="radar"/><Icon name="sparkles" color="var(--accent)"/><Icon name="scan-line"/></div></div>
+</div></div>)}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

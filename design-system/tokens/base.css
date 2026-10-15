@@ -1,0 +1,15 @@
+/* Claritas — base element defaults + tiny utilities. */
+html{background:var(--bg-app);color-scheme:dark}
+[data-theme="dark"]{color-scheme:dark}[data-theme="light"]{color-scheme:light}
+body{margin:0;background:var(--bg-app);color:var(--text-primary);font:var(--text-body);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+*,*::before,*::after{box-sizing:border-box}
+::selection{background:var(--accent-tint-strong);color:var(--sand-200)}
+a{color:var(--sand-400);text-decoration:none;text-underline-offset:3px}
+a:hover{color:var(--sand-300);text-decoration:underline}
+:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:var(--ink-700);border-radius:8px;border:2px solid transparent;background-clip:padding-box}::-webkit-scrollbar-track{background:transparent}
+.cl-num{font-family:var(--font-mono);font-variant-numeric:tabular-nums slashed-zero;letter-spacing:var(--num-m-track)}
+.cl-label{font:var(--text-label);letter-spacing:var(--label-track);text-transform:uppercase;color:var(--text-tertiary)}
+.cl-serif{font-family:var(--font-serif);font-weight:400}
+.cl-up{color:var(--market-up-text)}.cl-down{color:var(--market-down-text)}.cl-sand{color:var(--accent)}
+.cl-dotgrid{background-image:var(--grid-dots);background-size:var(--grid-dots-size)}

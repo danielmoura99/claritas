@@ -34,3 +34,13 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Design system
+
+The UI follows the Claritas design system:
+
+- [`DESIGN.md`](DESIGN.md) — visual contract and source of truth for the tokens.
+- [`design-system/`](design-system/README.md) — the component library, tokens, assets, templates, lint rules and standalone reference HTMLs.
+- [http://localhost:3000/design-system](http://localhost:3000/design-system) — showcase with every component, state and both themes; [`/design-system/terminal`](http://localhost:3000/design-system/terminal) renders the terminal template.
+
+Import components from `@/design-system` and use tokens instead of hardcoded colors, fonts, spacing or radii — `npm run lint` checks it.

@@ -1,0 +1,25 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Charts" subtitle="CandleChart (live + auto-análise + campo) · ProbabilityField · FlowArea · DistributionCurve · Sparkline" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<script src="../vendor/react.development.js"></script>
+<script src="../vendor/react-dom.development.js"></script>
+<script src="../vendor/babel.min.js"></script>
+<script src="../vendor/ds-bundle.js"></script>
+<style>body{padding:14px 16px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--text-label);letter-spacing:var(--label-track);text-transform:uppercase;color:var(--text-tertiary);width:84px;flex-shrink:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const DS = window.ClaritasDesignSystem_c8f168;
+
+const { CandleChart, Sparkline, FlowArea, DistributionCurve } = DS;
+const walk=(n,seed,v)=>{let s=seed*9301+49297,p=100,a=[];const r=()=>(s=(s*16807)%2147483647)/2147483647;for(let i=0;i<n;i++){p*=1+(r()-0.5+v*40)*0.012;a.push(p)}return a};
+function Dist(){const [m,setM]=React.useState(38.4);React.useEffect(()=>{const id=setInterval(()=>setM(x=>x+(Math.random()-.45)*.12),900);return()=>clearInterval(id)},[]);return <DistributionCurve mean={m} sd={0.32} target={38.8} min={37.4} max={39.6} decimals={2} ticks={4} height={130} />}
+function App(){return(<div className="col" style={{gap:12}}>
+<CandleChart live autoAnalyze scanning field height={240} window={64} />
+<div style={{display:'grid',gridTemplateColumns:'1fr 1fr 150px',gap:20,alignItems:'end'}}>
+<FlowArea live height={110} tickMs={800} />
+<Dist />
+<div className="col" style={{gap:10}}><Sparkline data={walk(48,3,0.004)} width={150} height={32} liveDot /><Sparkline data={walk(48,5,-0.004)} width={150} height={32} /></div>
+</div>
+</div>)}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

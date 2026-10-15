@@ -1,0 +1,13 @@
+/* Claritas — space, radius, layout. Dense by default: a trading desk, not a landing page. */
+:root{
+--space-0:0;--space-1:2px;--space-2:4px;--space-3:6px;--space-4:8px;--space-5:12px;--space-6:16px;--space-7:20px;--space-8:24px;--space-9:32px;--space-10:40px;--space-11:56px;--space-12:72px;
+
+--radius-xs:2px;--radius-sm:4px;--radius-md:6px;--radius-lg:10px;--radius-xl:14px;--radius-pill:999px;
+
+--control-h-sm:28px;--control-h-md:34px;--control-h-lg:42px;
+--row-h:40px;--row-h-dense:32px;
+--topbar-h:52px;--tape-h:32px;--rail-w:56px;--sidebar-w:296px;--inspector-w:360px;
+--panel-pad:16px;--panel-gap:8px;
+
+--z-base:0;/* @kind other */--z-chart-overlay:5;/* @kind other */--z-sticky:10;/* @kind other */--z-dropdown:40;/* @kind other */--z-overlay:80;/* @kind other */--z-dialog:90;/* @kind other */--z-toast:100;/* @kind other */--z-tooltip:110;/* @kind other */
+}
