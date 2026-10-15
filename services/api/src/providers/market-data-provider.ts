@@ -24,6 +24,8 @@ export interface MarketDataProvider {
   getCandles(req: CandleRequest): Promise<Candle[]>;
   /** Conectividade simples com o provedor (readiness informativa). */
   ping(): Promise<boolean>;
+  /** Offset estimado relógio do provedor − relógio local (ms), para medir latência sem viés de relógio. */
+  estimateClockOffsetMs?(): Promise<number>;
 }
 
 /** Evento de candle recebido do streaming upstream, já normalizado. */

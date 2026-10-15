@@ -2,11 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { buildApp } from "../../src/app";
 import { parseEnv } from "../../src/config/env";
+import { FakeStreamSource } from "../helpers/fake-stream";
 
 let app: FastifyInstance;
 
 beforeAll(async () => {
-  app = await buildApp({ env: parseEnv({ CORS_ORIGIN: "http://localhost:3000" }), logger: false });
+  app = await buildApp({ env: parseEnv({ CORS_ORIGIN: "http://localhost:3000" }), logger: false, streamSource: new FakeStreamSource() });
 });
 afterAll(() => app.close());
 

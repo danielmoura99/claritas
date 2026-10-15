@@ -97,6 +97,19 @@ export class BinanceSpotProvider implements MarketDataProvider {
     return sortDedupeCandles(candles);
   }
 
+  /** Amostra GET /api/v3/time 3×; usa a amostra de menor RTT (método de Cristian). */
+  async estimateClockOffsetMs(): Promise<number> {
+    let best: { rtt: number; offset: number } | null = null;
+    for (let i = 0; i < 3; i++) {
+      const t0 = Date.now();
+      const body = z.object({ serverTime: z.number() }).parse(await this.http.get("/api/v3/time"));
+      const t1 = Date.now();
+      const sample = { rtt: t1 - t0, offset: body.serverTime - (t0 + t1) / 2 };
+      if (!best || sample.rtt < best.rtt) best = sample;
+    }
+    return Math.round(best!.offset);
+  }
+
   async ping(): Promise<boolean> {
     try {
       await this.http.get("/api/v3/ping");
