@@ -94,3 +94,25 @@ describe("Análise sobre dados reais", () => {
     expect(h1.basis.lastOpenTimeMs % 3_600_000).toBe(0);
   });
 });
+
+describe("Scanner sobre dados reais", () => {
+  it("top 10 USDT por volume 24h real, ordenado, com métricas; segunda chamada sai do cache", async () => {
+    const t0 = Date.now();
+    const res = await app.inject("/api/v1/scanner?size=10&timeframe=15m");
+    expect(res.statusCode, res.body).toBe(200);
+    const d = res.json().data;
+    expect(d.universe).toMatchObject({ quote: "USDT", rankedBy: "quoteVolume24h" });
+    expect(d.results.length + d.skipped.length).toBe(10);
+    const vols = d.results.map((r: { quoteVolume24h: string }) => Number(r.quoteVolume24h));
+    for (let i = 1; i < vols.length; i++) expect(vols[i - 1]).toBeGreaterThanOrEqual(vols[i]);
+    for (const r of d.results) {
+      expect(r.symbol.endsWith("USDT")).toBe(true);
+      expect(r.closes).toHaveLength(30);
+      expect(["alta", "baixa", "indefinido"]).toContain(r.regime);
+    }
+    const first = Date.now() - t0;
+    const t1 = Date.now();
+    await app.inject("/api/v1/scanner?size=10&timeframe=15m");
+    expect(Date.now() - t1).toBeLessThan(Math.max(50, first / 4));
+  });
+});
