@@ -17,6 +17,8 @@ import { AnalysisService } from "./modules/analysis/analysis-service";
 import { analysisRoutes } from "./modules/analysis/routes";
 import { ScannerService } from "./modules/scanner/scanner-service";
 import { scannerRoutes } from "./modules/scanner/routes";
+import { ReportService } from "./modules/report/report-service";
+import { reportRoutes } from "./modules/report/routes";
 
 export interface AppOptions {
   env: Env;
@@ -94,6 +96,8 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
   await app.register(analysisRoutes, { prefix: "/api/v1/analysis", analysis });
   const scanner = new ScannerService(market, env.SCANNER_CONCURRENCY);
   await app.register(scannerRoutes, { prefix: "/api/v1/scanner", scanner });
+  const report = new ReportService(market);
+  await app.register(reportRoutes, { prefix: "/api/v1/report", report });
 
   let clockOffsetMs = 0;
   const refreshClockOffset = async () => {

@@ -153,6 +153,8 @@ export function MarketChart({
     palette: Palette;
   } | null>(null);
   const applied = React.useRef<{ key: string; first: number; length: number } | null>(null);
+  /** Momento em que a série atual foi carregada: redimensionamentos logo depois reenquadram (layout ainda assentando). */
+  const fittedAt = React.useRef(0);
   const [ready, setReady] = React.useState(false);
   const [hover, setHover] = React.useState<ChartBar | null>(null);
   const fmt = React.useMemo(() => makeFormatters(timeZone, decimals), [timeZone, decimals]);
@@ -208,8 +210,14 @@ export function MarketChart({
         setReady((r) => !r);
       });
       mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      // O contêiner pode mudar de largura logo após a carga (grid/fontes assentando): reenquadra nesse intervalo.
+      const ro = new ResizeObserver(() => {
+        if (performance.now() - fittedAt.current < 2_000) chart.timeScale().fitContent();
+      });
+      ro.observe(host.current);
       setReady(true);
       cleanup = () => {
+        ro.disconnect();
         mo.disconnect();
         chart.remove();
         api.current = null;
@@ -238,7 +246,8 @@ export function MarketChart({
     if (bars.length === 0) {
       a.candles.setData([]);
       a.volume.setData([]);
-      applied.current = { key: seriesKey, first: 0, length: 0 };
+      // Série vazia (carregando) não conta como aplicada: os primeiros dados reais precisam reenquadrar.
+      applied.current = null;
       return;
     }
     const prev = applied.current;
@@ -253,7 +262,10 @@ export function MarketChart({
     const { candles, volume } = toSeriesData(bars, a.palette);
     a.candles.setData(candles);
     a.volume.setData(showVolume ? volume : []);
-    if (!prev || prev.key !== seriesKey) a.chart.timeScale().fitContent();
+    if (!prev || prev.key !== seriesKey) {
+      a.chart.timeScale().fitContent();
+      fittedAt.current = performance.now();
+    }
     applied.current = { key: seriesKey, first, length: bars.length };
   }, [bars, seriesKey, showVolume, ready]);
 

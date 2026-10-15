@@ -5,6 +5,7 @@ import {
   CandleSchema,
   MarketAssetSchema,
   QuoteSchema,
+  ReportSchema,
   ScannerResultSchema,
   marketEnvelope,
   type Analysis,
@@ -14,6 +15,7 @@ import {
   type MarketAsset,
   type MarketEnvelope,
   type Quote,
+  type Report,
   type ScannerResult,
 } from "@claritas/contracts";
 import { API_URL } from "./config";
@@ -75,6 +77,11 @@ export const analysisApi = {
 export const scannerApi = {
   scan: (size: number, timeframe: Interval, signal?: AbortSignal): Promise<MarketEnvelope<ScannerResult>> =>
     apiGet(`/api/v1/scanner?${qs({ quote: "USDT", size, timeframe })}`, marketEnvelope(ScannerResultSchema), { signal }),
+};
+
+export const reportApi = {
+  get: (p: { symbol: string; window: "rolling_24h" | "day"; date?: string; tz: "America/Sao_Paulo" | "UTC" }, signal?: AbortSignal): Promise<MarketEnvelope<Report>> =>
+    apiGet(`/api/v1/report?${qs(p)}`, marketEnvelope(ReportSchema), { signal }),
 };
 
 /** Mensagem curta, no tom Claritas, para cada erro. */

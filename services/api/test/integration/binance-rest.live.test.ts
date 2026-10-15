@@ -116,3 +116,28 @@ describe("Scanner sobre dados reais", () => {
     expect(Date.now() - t1).toBeLessThan(Math.max(50, first / 4));
   });
 });
+
+describe("Resumo do período sobre dados reais", () => {
+  it("24h móveis: OHLCV coerente com os candles da janela e janela explícita", async () => {
+    const res = await app.inject("/api/v1/report?symbol=BTCUSDT");
+    expect(res.statusCode, res.body).toBe(200);
+    const r = res.json().data;
+    expect(r.window).toMatchObject({ kind: "rolling_24h", partial: true });
+    expect(r.window.endMs - r.window.startMs).toBe(86_400_000);
+    expect(r.bars).toBeGreaterThanOrEqual(95);
+    const highs = r.candles.map((c: { high: string }) => Number(c.high));
+    expect(Number(r.ohlcv.high)).toBeCloseTo(Math.max(...highs), 2);
+    expect(r.ohlcv.open).toBe(r.candles[0].open);
+    expect(r.ohlcv.close).toBe(r.candles.at(-1).close);
+    expect(r.movers.gainers.length).toBe(3);
+    expect(r.method.length).toBeGreaterThan(3);
+  });
+
+  it("dia anterior em Brasília: janela fechada de 96 barras de 15m", async () => {
+    const d = new Date(Date.now() - 2 * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    const r = (await app.inject(`/api/v1/report?symbol=ETHUSDT&window=day&date=${d}`)).json().data;
+    expect(r.window.partial).toBe(false);
+    expect(r.bars).toBe(96);
+    expect(r.movers).toBeNull();
+  });
+});
