@@ -16,7 +16,7 @@ export interface LiveIndicatorProps {
   status?: LiveStatus;
   label?: string;
   /** Mono secondary text, e.g. a clock "14:32:07". */
-  detail?: string;
+  detail?: React.ReactNode;
   size?: "sm" | "md";
   style?: React.CSSProperties;
 }

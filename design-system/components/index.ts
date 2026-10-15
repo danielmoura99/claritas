@@ -28,6 +28,7 @@ export { TickerTape, type TickerTapeProps, type TapeItem } from "./market/Ticker
 export { WatchRow, type WatchRowProps } from "./market/WatchRow";
 // charts
 export { CandleChart, type CandleChartProps, type Candle, type Annotation, type GenerateSeriesOptions } from "./charts/CandleChart";
+export { MarketChart, type MarketChartProps, type ChartBar, type ChartLine, type ChartLevel, type ChartMarker } from "./charts/MarketChart";
 export { DistributionCurve, type DistributionCurveProps } from "./charts/DistributionCurve";
 export { FlowArea, type FlowAreaProps } from "./charts/FlowArea";
 export { ProbabilityField, type ProbabilityFieldProps } from "./charts/ProbabilityField";

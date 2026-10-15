@@ -29,7 +29,7 @@ const EnvSchema = z.object({
   MARKET_DATA_PROVIDER: z.literal("binance_spot").default("binance_spot"),
   BINANCE_SPOT_REST_URL: z.url().default("https://data-api.binance.vision"),
   BINANCE_SPOT_WS_URL: z.string().regex(/^wss?:\/\//).default("wss://data-stream.binance.vision:443"),
-  BINANCE_HTTP_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(8_000),
+  BINANCE_HTTP_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(4_000),
   MARKET_DEFAULT_SYMBOL: SymbolSchema.default("BTCUSDT"),
   MARKET_DEFAULT_INTERVAL: IntervalSchema.default("5m"),
   /** Símbolos exibidos na fita/seletor quando não há watchlist persistida. */

@@ -30,6 +30,10 @@ Hosts `data-api.binance.vision` e `data-stream.binance.vision` são exclusivos d
 
 Intervalos são case-sensitive (`1m` minuto ≠ `1M` mês); só `1m 3m 5m 15m 30m 1h 4h 1d` são aceitos. Linhas malformadas ou com OHLC incoerente (`low ≤ min(o,c) ≤ max(o,c) ≤ high`, volume ≥ 0) são descartadas com log.
 
+## Latência observada (14/10/2026, a partir do ambiente de desenvolvimento no Brasil)
+
+`data-api.binance.vision` resolve para AWS Tóquio: ~290 ms por requisição com conexão reaproveitada e ~2,5 s na primeira (handshake TLS). Conexões keep-alive ociosas ocasionalmente morrem em silêncio e a requisição só falha no timeout; por isso o timeout por tentativa é 4 s (`BINANCE_HTTP_TIMEOUT_MS`) com 2 retentativas. Em produção, hospedar a API perto da Binance reduz isso.
+
 ## Robustez implementada
 
 - **HTTP:** timeout (`BINANCE_HTTP_TIMEOUT_MS`), 2 retentativas com backoff exponencial + jitter (crypto) só para rede/5xx; 4xx nunca repete; `-1121` → `SYMBOL_NOT_FOUND`; 429/418 → bloqueio local até `Retry-After` (sem novas chamadas); acompanha `X-MBX-USED-WEIGHT-1M` e recusa chamadas acima de 90% de 6000/min.
