@@ -57,3 +57,24 @@ describe("sem banco configurado", () => {
     expect((await app.inject("/health")).statusCode).toBe(200);
   });
 });
+
+describe("limite de requisições e cabeçalhos", () => {
+  it("excede o limite → 429 RATE_LIMITED padronizado; /health fica de fora", async () => {
+    const limited = await buildApp({ env: parseEnv({ API_RATE_LIMIT_PER_MINUTE: "10" }), logger: false, streamSource: new FakeStreamSource() });
+    // Rota real com query inválida: responde 400 sem tocar a rede, mas conta para o limite.
+    const url = "/api/v1/market/candles?symbol=x";
+    let last = await limited.inject(url);
+    for (let i = 0; i < 10; i++) last = await limited.inject(url);
+    expect(last.statusCode).toBe(429);
+    expect(last.json().error).toMatchObject({ code: "RATE_LIMITED" });
+    expect(last.headers["retry-after"]).toBeTruthy();
+    expect((await limited.inject("/health")).statusCode).toBe(200);
+    await limited.close();
+  });
+
+  it("cabeçalhos defensivos", async () => {
+    const res = await app.inject("/health");
+    expect(res.headers["x-content-type-options"]).toBe("nosniff");
+    expect(res.headers["x-frame-options"]).toBe("DENY");
+  });
+});

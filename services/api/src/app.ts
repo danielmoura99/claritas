@@ -2,9 +2,10 @@ import { randomUUID } from "node:crypto";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 import cors from "@fastify/cors";
 import websocket from "@fastify/websocket";
+import rateLimit from "@fastify/rate-limit";
 import type { ApiError } from "@claritas/contracts";
 import type { Env } from "./config/env";
-import { isAppError } from "./infrastructure/errors";
+import { AppError, isAppError } from "./infrastructure/errors";
 import { TtlCache } from "./infrastructure/cache";
 import type { MarketDataProvider, MarketStreamSource } from "./providers/market-data-provider";
 import { BinanceStreamSource } from "./providers/binance/stream-source";
@@ -46,6 +47,19 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
 
   app.addHook("onSend", async (req, reply) => {
     reply.header("x-request-id", req.id);
+    // API só de dados JSON: cabeçalhos defensivos básicos.
+    reply.header("x-content-type-options", "nosniff");
+    reply.header("referrer-policy", "no-referrer");
+    reply.header("x-frame-options", "DENY");
+  });
+
+  // Limite por IP: protege a API e, por tabela, o orçamento de peso da Binance. Health/ready ficam de fora.
+  await app.register(rateLimit, {
+    max: env.API_RATE_LIMIT_PER_MINUTE,
+    timeWindow: "1 minute",
+    allowList: (req) => req.url === "/health" || req.url === "/ready",
+    // O objeto retornado é lançado como erro: AppError passa pelo formato padronizado (ApiError).
+    errorResponseBuilder: (_req, ctx) => new AppError("RATE_LIMITED", `Limite de ${ctx.max} requisições por minuto excedido`, { retryAfterSec: Math.ceil(ctx.ttl / 1000) }),
   });
 
   await app.register(cors, {

@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+.next
+.data
+.env
+.env.*
+!.env.example
+test-results
+playwright-report
+services/api/src/generated
+docs/screenshots
+design-system/reference
+e2e

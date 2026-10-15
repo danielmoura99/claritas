@@ -1,0 +1,23 @@
+# Blueprint Render para a API Claritas (processo persistente com WebSocket). NÃO aplicado — ver docs/DEPLOY.md.
+services:
+  - type: web
+    name: claritas-api
+    runtime: docker
+    dockerfilePath: services/api/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    preDeployCommand: npm run db:migrate
+    envVars:
+      - key: DATABASE_URL
+        sync: false # connection string do Neon (secreta)
+      - key: CORS_ORIGIN
+        sync: false # ex.: https://claritas.example.com
+      - key: MARKET_DATA_PROVIDER
+        value: binance_spot
+      - key: BINANCE_SPOT_REST_URL
+        value: https://data-api.binance.vision
+      - key: BINANCE_SPOT_WS_URL
+        value: wss://data-stream.binance.vision:443
+      - key: LOG_LEVEL
+        value: info

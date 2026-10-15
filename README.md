@@ -1,5 +1,37 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Claritas Terminal
+
+Terminal de análise gráfica com **dados reais da Binance Spot** (REST histórico + WebSocket ao vivo), no visual do design system Claritas. Três telas: **Pregão ao vivo** (`/`), **Scanner** (`/scanner`) e **Resumo do período** (`/relatorio`).
+
+**Arquitetura:** Next.js 16 na raiz (frontend) → **API Claritas** independente (Node 24 + Fastify 5, `services/api`) → Binance Spot pública. Contratos Zod compartilhados em `packages/contracts`. Persistência (watchlist, preferências) em PostgreSQL (Neon) via Prisma 7. O navegador só fala com a API Claritas.
+
+### Como executar
+
+```bash
+npm install                 # Node >= 24.11 (ver .nvmrc); gera o Prisma Client
+cp .env.example .env        # só na primeira vez; ajuste DATABASE_URL (Neon). Sem ela a API sobe sem persistência
+npm run db:migrate          # aplica migrações pendentes no banco do DATABASE_URL (não destrutivo)
+npm run db:seed             # watchlist default (opcional)
+npm run dev                 # web (localhost:3000) + API (localhost:4000) juntos
+```
+
+Produção local: `npm run build && npm run start` (web) e `npm run start:api` (API).
+
+### Qualidade
+
+| Comando | O que roda |
+|---|---|
+| `npm run lint` / `npm run typecheck` | ESLint (inclui aderência ao design system) / TypeScript em web, API e contratos |
+| `npm test` | Unitários (contratos, API, frontend) — offline |
+| `npm run test:integration` | Integração contra a **Binance real** (rede) |
+| `npm run test:db` | Persistência em PostgreSQL **local descartável** (`npm run db:local:start`); nunca toca o `DATABASE_URL` |
+| `npm run test:e2e` | Playwright: `live` (pilha real) e `visual` (regressão visual com dados congelados só nos testes) |
+
+### Documentação
+
+[`PLANO_IMPLEMENTACAO_CLARITAS_TERMINAL.md`](PLANO_IMPLEMENTACAO_CLARITAS_TERMINAL.md) (plano e estado) · [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md) · [`docs/DATA_PROVIDER_BINANCE.md`](docs/DATA_PROVIDER_BINANCE.md) · [`docs/ANALYSIS_METHODS.md`](docs/ANALYSIS_METHODS.md) · [`docs/PERSISTENCE.md`](docs/PERSISTENCE.md) · [`docs/DEPLOY.md`](docs/DEPLOY.md) · [`docs/DECISIONS.md`](docs/DECISIONS.md) · [`docs/DESIGN_SYSTEM_AUDIT.md`](docs/DESIGN_SYSTEM_AUDIT.md)
+
 ## Getting Started
 
 First, run the development server:

@@ -329,7 +329,8 @@ export function MarketChart({
         )}
         {lines.map((l) => <span key={l.id} style={{ color: l.tone === "sand" ? "var(--chart-ma-fast)" : "var(--chart-ma-slow)" }}>{l.label}</span>)}
       </div>
-      {overlay && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 24 }}>{overlay}</div>}
+      {/* Acima do canvas do Lightweight Charts, que senão intercepta o clique (ex.: "Tentar novamente"). */}
+      {overlay && <div style={{ position: "absolute", inset: 0, zIndex: "var(--z-chart-overlay)", display: "grid", placeItems: "center", padding: 24 }}>{overlay}</div>}
     </div>
   );
 }

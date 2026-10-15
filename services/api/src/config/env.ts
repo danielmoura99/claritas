@@ -25,6 +25,8 @@ const EnvSchema = z.object({
   API_HOST: z.string().default("127.0.0.1"),
   API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   CORS_ORIGIN: csv.default(["http://localhost:3000"]),
+  /** Requisições REST por IP por minuto (WebSocket tem limites próprios). */
+  API_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).max(100_000).default(600),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   MARKET_DATA_PROVIDER: z.literal("binance_spot").default("binance_spot"),
   BINANCE_SPOT_REST_URL: z.url().default("https://data-api.binance.vision"),

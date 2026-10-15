@@ -4,7 +4,7 @@
 >
 > **Versão do plano:** 1.0  
 > **Data de referência:** 14/10/2026  
-> **Status de implementação:** **NÃO INICIADA por este plano** — as etapas abaixo são tarefas, não entregas concluídas.  
+> **Status de implementação (15/10/2026):** etapas 0–8 **concluídas e validadas**; etapa 9 concluída na parte de qualidade, **deploy pendente** (ver seção 14).  
 > **Ponto de partida informado pelo responsável:** Next.js já instalado **na pasta raiz**; design system do Claritas já organizado **na pasta raiz**. A estrutura real desses arquivos ainda precisa ser auditada no repositório local.  
 > **Arquivo que deve permanecer na raiz:** `PLANO_IMPLEMENTACAO_CLARITAS_TERMINAL.md`.
 
@@ -610,9 +610,9 @@ DATABASE_URL=postgresql://claritas:change_me@localhost:5432/claritas
 | ADR-006 | Sem simulador na aplicação | Escopo explicitamente alterado pelo responsável | **Aceita** |
 | ADR-007 | PostgreSQL/Prisma para dados de produto, não feed tick-by-tick no MVP | Simplificar sem sacrificar arquitetura futura | **Aceita** |
 | ADR-008 | Gráfico real via Lightweight Charts dentro do visual Claritas | Atualização incremental e bom desempenho | **Aceita; validar viabilidade visual na etapa zero** |
-| ADR-009 | Seleção do deploy da API | Depende de custos, região e WS persistente | **Pendente** |
+| ADR-009 | Seleção do deploy da API | Depende de custos, região e WS persistente | **Pendente — proposta em `docs/DEPLOY.md` (Render Docker, região próxima a Tóquio; Vercel para o web; Neon)** |
 | ADR-010 | Regra exata dos indicadores e dos sinais | Não há estratégia quantitativa definida | **Pendente; não inventar** |
-| ADR-011 | Estrutura física do design system no repositório | Não foi inspecionada na raiz real | **Pendente; obrigatória na etapa zero** |
+| ADR-011 | Estrutura física do design system no repositório | Não foi inspecionada na raiz real | **Resolvida (14/10): `design-system/` + `DESIGN.md`; ver `docs/DECISIONS.md`** |
 | ADR-012 | Autenticação e persistência de preferências | Nenhuma obrigação inicial definida | **Adiada** |
 
 Para mudar uma decisão aceita: abrir registro em `docs/DECISIONS.md` contendo **situação, opções, trade-off, decisão, data, arquivos afetados e estratégia de migração**. Não alterar silenciosamente.
@@ -623,16 +623,16 @@ Para mudar uma decisão aceita: abrir registro em `docs/DECISIONS.md` contendo *
 
 Quando o agente receber autorização de execução, **começar pelo primeiro item não concluído**, sem pular etapas:
 
-1. [ ] **Inspecionar a raiz e auditar design system (etapa zero).** Entregar inventário e screenshots.
-2. [ ] Garantir o Next existente rodando sem regressão visual; salvar baseline.
-3. [ ] Criar Fastify independente em `services/api/`; manter Next na raiz.
-4. [ ] Criar `packages/contracts` e tipos básicos `Candle`, `MarketAsset`, `MarketStatus`.
-5. [ ] Consumir `GET /api/v3/klines?symbol=BTCUSDT&interval=5m&limit=500` pela API Node, normalizar e expor em `/api/v1/market/candles`.
-6. [ ] Mostrar no frontend um `BTCUSDT/5m` **real** dentro do contêiner de gráfico Claritas, respeitando tokens e responsividade.
-7. [ ] Adicionar WSS Binance → API Claritas → `series.update()` no gráfico.
-8. [ ] Testar desconexão/reconexão, troca `BTCUSDT` ↔ `ETHUSDT`, troca `5m` ↔ `15m`.
-9. [ ] Desativar/sinalizar qualquer informação demonstrativa remanescente na versão integrada.
-10. [ ] Registrar screenshots de comparação, testes, decisões, limitações e estado final.
+1. [x] **Inspecionar a raiz e auditar design system (etapa zero).** Entregar inventário e screenshots.
+2. [x] Garantir o Next existente rodando sem regressão visual; salvar baseline.
+3. [x] Criar Fastify independente em `services/api/`; manter Next na raiz.
+4. [x] Criar `packages/contracts` e tipos básicos `Candle`, `MarketAsset`, `MarketStatus`.
+5. [x] Consumir `GET /api/v3/klines?symbol=BTCUSDT&interval=5m&limit=500` pela API Node, normalizar e expor em `/api/v1/market/candles`.
+6. [x] Mostrar no frontend um `BTCUSDT/5m` **real** dentro do contêiner de gráfico Claritas, respeitando tokens e responsividade.
+7. [x] Adicionar WSS Binance → API Claritas → `series.update()` no gráfico.
+8. [x] Testar desconexão/reconexão, troca `BTCUSDT` ↔ `ETHUSDT`, troca `5m` ↔ `15m`.
+9. [x] Desativar/sinalizar qualquer informação demonstrativa remanescente na versão integrada.
+10. [x] Registrar screenshots de comparação, testes, decisões, limitações e estado final.
 
 **Entrega de MVP técnico somente ao concluir 1–10.** Não iniciar scanner avançado, probabilidades de IA ou persistência antes de validar o fluxo de dados real.
 
@@ -699,13 +699,29 @@ O agente executor deve trabalhar **incrementalmente e com evidências**:
 | 6. Scanner real | **CONCLUÍDA** (14/10) | `GET /api/v1/scanner?quote&size&timeframe`: universo = top N USDT por volume 24h real (1 ticker de todos, cache 60 s; exclui bases lastreadas), métricas por ativo via klines com concorrência limitada (`SCANNER_CONCURRENCY`) e cache por barra, resultado em cache 30 s; tela no layout do template (critérios, feixe só durante a varredura real, tabela com sparkline/último/var. 24h/setup/vol. rel./evento), filtros no cliente sem novas chamadas, clique abre o ativo no Pregão; testes: 3 unitários (ranking/exclusão/concorrência ≤ limite/cache) + 4 de critérios + 1 integração real; navegador: 30 reais → filtro → XRPUSDT/15m aberto | — |
 | 7. Relatório com janela explícita | **CONCLUÍDA** (14/10) | `GET /api/v1/report?symbol&window=(rolling_24h ou day)&date&tz` (OHLCV, variação, amplitude, volatilidade realizada, maior queda/alta, regime ao fim, eventos na janela, movers 24h, lista de método); tela "Resumo do período" (ADR-015) no layout do template com manchete determinística, KPIs, gráfico do período, destaques e método; correção no `MarketChart` (reenquadrar quando os dados chegam após estado vazio); testes: 5 unitários (fuso via Intl, limites de dia BRT/UTC, drawdown) + 2 integração real; navegador: 24h móveis e Dia/UTC parcial corretos; screenshots `docs/screenshots/etapa-7/` | — |
 | 8. PostgreSQL/Prisma | **CONCLUÍDA** (15/10) | Prisma 7.10.0 + adapter-pg em `services/api/prisma` (Watchlist, WatchlistItem por base/cotação, UserPreference por id anônimo); migração `init` aplicada com `migrate deploy` no **Neon** (banco do projeto, definido pelo responsável) + seed sem cotações; rotas `/api/v1/watchlist` e `/api/v1/preferences/:clientId`, 503 `DB_UNAVAILABLE` sem banco; `/ready` com `database`; frontend: estrela "Favoritar", seção Watchlist no seletor, restauração do último ativo/intervalo; testes: 5 de banco real (banco descartável vazio + `migrate deploy`, só local) + 1 unitário 503; navegador contra Neon: adicionar/remover e restaurar preferência OK; `docs/PERSISTENCE.md` (backup/rollback) | Autenticação/listas por usuário adiadas (ADR-012) |
-| 9. Qualidade e deploy | **NÃO INICIADA** | — | Host persistente da API |
+| 9. Qualidade e deploy | **PARCIAL** (15/10) — qualidade concluída; **deploy bloqueado** | Playwright: projeto `live` (8 testes na pilha real: atualização ao vivo, troca ativo/timeframe, scanner → pregão, resumo, fontes, foco por teclado, reduced-motion, sem vazamento de assinaturas) e `visual` (9 baselines 1440/1366/390 das 3 telas com dados congelados só no teste + 4 estados: offline, stale, provedor fora com retry, resposta tardia ignorada) — **21/21 contra o build de produção**; achado e corrigido: canvas do gráfico interceptava o clique em "Tentar novamente"; rate limit por IP (`429 RATE_LIMITED`), cabeçalhos de segurança (API e Next); `npm audit` sem críticas (9 altas só em CLI/lint, documentadas); `Dockerfile` da API, `render.yaml`, `docs/DEPLOY.md` | Deploy público vetado nesta fase e sem contas/Docker no ambiente; CSP com nonce; revisão dos termos de dados da Binance; ADR-009 (host da API) — ver `docs/DEPLOY.md` |
 
-**Última atualização do estado:** 14/10/2026 — plano criado, nenhuma implementação neste repositório verificada.
+**Última atualização do estado:** 15/10/2026 — etapas 0–8 concluídas e validadas; etapa 9 concluída na parte de qualidade, com o deploy público bloqueado por decisão do responsável (não publicar externamente) e por falta de contas/Docker no ambiente.
 
-**Bloqueador atual:** inspeção do projeto raiz e do design system real ainda não realizada.
+**Bloqueador atual:** deploy (Etapa 9) — requer autorização para publicar, contas Vercel + Render/Fly e decisão do ADR-009. Nada mais bloqueia o uso local.
 
-**Próxima ação única:** **ETAPA 0 — AUDITAR O DESIGN SYSTEM EXISTENTE ANTES DE INSTALAR QUALQUER DEPENDÊNCIA OU ALTERAR O NEXT.**
+**Próxima ação única:** decidir o host da API (ADR-009) e autorizar o deploy; então seguir o passo a passo de `docs/DEPLOY.md` (branch Neon → `docker build` → Render Blueprint → Vercel → `npm run test:e2e -- --project=live` contra o domínio).
+
+### Registro da sessão de execução (14–15/10/2026)
+
+```text
+Data / hora / fuso: 14/10/2026 21:00 – 15/10/2026 07:30 (America/Sao_Paulo)
+Agente ou responsável: Claude (Claude Code), execução autônoma autorizada pelo responsável
+Etapa ativa: 0 → 9
+Estado Git antes: master @ 7f0ba75 + design system não commitado; trabalho em feat/claritas-terminal
+Arquivos alterados: ver commits da branch feat/claritas-terminal (um por etapa)
+Resultados e testes: npm run lint OK · npm run typecheck OK · npm test 86/86 · npm run test:integration 13/13 (Binance real) · npm run test:db 5/5 (PostgreSQL local descartável) · npm run build OK · npm run test:e2e 21/21 (build de produção)
+Diferenças visuais: telas reais mantêm o layout do template (topbar 60, rail 56, gráfico + leitura 380, faixa de widgets, fita); painéis sem fonte real substituídos/indisponíveis (ADR-016); gráfico agora é Lightweight Charts com tokens Claritas; mobile empilha painéis (o template cortava em 390 px)
+Decisões: ADR-011, 013 a 017 em docs/DECISIONS.md; banco do projeto = Neon (definido pelo responsável em 15/10)
+Problemas/bloqueios: deploy (acima). Incidente 15/10: um comando de edição de documentação executou trechos por substituição do shell e sobrescreveu o .env local (credenciais Neon); arquivo restaurado do histórico local do VS Code, sem impacto no banco (as migrações disparadas falharam contra o host de exemplo). Prevenção: edições de texto só por ferramentas de arquivo
+Estado Git depois: feat/claritas-terminal com os commits das etapas 0–9
+Próximo passo único: ver "Próxima ação única" acima
+```
 
 ### Registro incremental de trabalho (preencher a cada sessão)
 
@@ -747,18 +763,20 @@ Copiar esta mensagem para a nova LLM e **anexar o repositório ou disponibilizar
 
 O MVP técnico só está pronto quando **todos** os itens abaixo forem comprovados:
 
-- [ ] Next existente preservado e design system auditado/reutilizado, sem redesign.
-- [ ] Fastify separado executando em Node.js, acessível via API Claritas.
-- [ ] Binance Spot REST retorna candles históricos reais de `BTCUSDT`.
-- [ ] Binance Spot WSS atualiza o candle corrente na interface.
-- [ ] UI atualiza incrementalmente sem recarregar o gráfico inteiro.
-- [ ] Troca de ativo e timeframe preserva consistência, precision, fuso e subscriptions.
-- [ ] Erros, desconexão e stale feed não são escondidos por valores fictícios.
-- [ ] Fontes, cores, tipografia, navegação e painéis permanecem reconhecivelmente Claritas.
-- [ ] Não há cálculos/"confianças" sem método apresentados como reais.
-- [ ] Testes unitários, integração, E2E e screenshots relevantes passaram.
-- [ ] `.env.example`, contrato de API, documentação Binance, decisões e seção 14 estão atualizados.
-- [ ] Nova LLM consegue retomar lendo apenas o repositório e este plano.
+- [x] Next existente preservado e design system auditado/reutilizado, sem redesign. — `docs/DESIGN_SYSTEM_AUDIT.md`; telas montadas só com `@/design-system`; baseline vs. `docs/screenshots/etapa-*`.
+- [x] Fastify separado executando em Node.js, acessível via API Claritas. — `services/api`, `npm run dev:api`, `/health` e `/ready`.
+- [x] Binance Spot REST retorna candles históricos reais de `BTCUSDT`. — `test/integration/binance-rest.live.test.ts` (500 candles, OHLC coerente, UTC).
+- [x] Binance Spot WSS atualiza o candle corrente na interface. — E2E `live` "Pregão…": preço da barra corrente muda por evento real.
+- [x] UI atualiza incrementalmente sem recarregar o gráfico inteiro. — `MarketChart`: `update()` por tick; `setData` só na carga, troca de série e abertura de barra (documentado no componente).
+- [x] Troca de ativo e timeframe preserva consistência, precision, fuso e subscriptions. — E2E de troca sem mistura, teste de resposta tardia, teste sem vazamento de assinaturas, unitários de `upsertCandle`.
+- [x] Erros, desconexão e stale feed não são escondidos por valores fictícios. — testes do hub (stale/reconnecting/offline), estados visuais offline/stale/provedor fora, guarda `no-fake-data`.
+- [x] Fontes, cores, tipografia, navegação e painéis permanecem reconhecivelmente Claritas. — 9 baselines visuais + teste de fontes.
+- [x] Não há cálculos/"confianças" sem método apresentados como reais. — `docs/ANALYSIS_METHODS.md`, painéis indisponíveis (ADR-016), teste de análise sem campos de probabilidade.
+- [x] Testes unitários, integração, E2E e screenshots relevantes passaram. — 86 + 13 + 5 + 21 (registro da sessão, seção 14).
+- [x] `.env.example`, contrato de API, documentação Binance, decisões e seção 14 estão atualizados.
+- [x] Nova LLM consegue retomar lendo apenas o repositório e este plano. — seção 14, `AGENTS.md` (regras), `README.md` (execução), `docs/`.
+
+**Fora do DoD do MVP e pendente:** deploy público (Etapa 9) — ver seção 14 e `docs/DEPLOY.md`.
 
 ---
 

@@ -24,6 +24,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Showcase: `/design-system` renders every component, state and both themes (`data-theme="dark"` canonical, `"light"` derived). Add new components there.
 - Copy is pt-BR, analyst voice, numbers in Geist Mono with pt-BR formatting (see `DESIGN.md` → Typography).
 
+## Claritas Terminal — architecture and rules
+
+- Read `PLANO_IMPLEMENTACAO_CLARITAS_TERMINAL.md` (sections 0, 14, 15, 16) and `docs/DECISIONS.md` before changing anything; continue from the first pending item in section 14.
+- Layout: Next.js at the root (`app/(terminal)/` screens, `components/terminal/` compositions, `lib/api` typed client, `lib/market` hooks) · API in `services/api` (Fastify; `providers/`, `modules/{market,streaming,analysis,scanner,report,watchlist}`) · shared Zod contracts in `packages/contracts`. The browser talks only to the Claritas API, never to Binance.
+- **No fake data at runtime:** never use `Math.random`, generated series or the design-system template data in `app/`, `components/`, `lib/` or `services/api/src` (enforced by `services/api/test/unit/no-fake-data.test.ts`). Fixtures live only under `services/api/test/` and `e2e/fixtures/`.
+- No probabilities, confidence or "AI" readings without a documented, validated method (`docs/ANALYSIS_METHODS.md`). Panels without a real source stay **unavailable**.
+- "Ao vivo" may only render when the feed status is `live`.
+- Prices are decimal strings in contracts; convert to number only at the chart edge (`toChartNumber`).
+- Database: `DATABASE_URL` in `.env` is the real Neon database and `.env` holds secrets — never overwrite or print it. Only non-destructive Prisma commands (`migrate deploy`, `db seed`, `generate`, `migrate status`); never `migrate reset`/`migrate dev` against it. DB tests use the local throwaway cluster only.
+- Before finishing: `npm run lint && npm run typecheck && npm test && npm run build`, plus `npm run test:integration`, `npm run test:db` and `npm run test:e2e` when relevant; update section 14 of the plan.
+
 <!-- BEGIN:nextjs-agent-feedback -->
 
 ## Report Next.js feedback
