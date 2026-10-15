@@ -5,7 +5,7 @@
   "description": "Claritas API — Node.js + Fastify. Única ponte com provedores de dados de mercado (Binance Spot).",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "dev": "node --watch --watch-preserve-output --import tsx src/server.ts",
     "start": "tsx src/server.ts",
     "build": "tsc --noEmit -p .",
     "typecheck": "tsc --noEmit -p .",
