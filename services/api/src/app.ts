@@ -4,14 +4,21 @@ import cors from "@fastify/cors";
 import type { ApiError } from "@claritas/contracts";
 import type { Env } from "./config/env";
 import { isAppError } from "./infrastructure/errors";
+import { TtlCache } from "./infrastructure/cache";
+import type { MarketDataProvider } from "./providers/market-data-provider";
+import { BinanceSpotProvider } from "./providers/binance/binance-provider";
+import { MarketService } from "./modules/market/market-service";
+import { marketRoutes } from "./modules/market/routes";
 
 export interface AppOptions {
   env: Env;
   logger?: FastifyServerOptions["logger"];
+  /** Injeção para testes; em produção é criado a partir do env. */
+  provider?: MarketDataProvider;
 }
 
 /** Monta a instância Fastify (sem escutar porta) — usada pelo servidor e pelos testes via `inject`. */
-export async function buildApp({ env, logger }: AppOptions): Promise<FastifyInstance> {
+export async function buildApp({ env, logger, provider: injectedProvider }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: logger ?? { level: env.LOG_LEVEL, redact: ["req.headers.authorization", "req.headers.cookie"] },
     genReqId: (req) => {
@@ -60,5 +67,26 @@ export async function buildApp({ env, logger }: AppOptions): Promise<FastifyInst
   /** Liveness: só diz que o processo responde. Não depende de mercado nem banco. */
   app.get("/health", async () => ({ status: "ok", uptimeSec: Math.round((Date.now() - startedAt) / 1000) }));
 
+  const provider =
+    injectedProvider ??
+    new BinanceSpotProvider({ restUrl: env.BINANCE_SPOT_REST_URL, timeoutMs: env.BINANCE_HTTP_TIMEOUT_MS, log: app.log.child({ module: "binance-rest" }) });
+  const market = new MarketService(provider, env.MARKET_FEATURED_SYMBOLS);
+  app.decorate("market", market);
+
+  /** Readiness: a API está pronta para servir. O estado do provedor é informativo — mercado instável não derruba a API. */
+  const readinessCache = new TtlCache<boolean>(4);
+  app.get("/ready", async () => {
+    const providerReachable = await readinessCache.getOrLoad("provider", 15_000, () => provider.ping());
+    return { status: "ready", checks: { provider: { id: provider.id, reachable: providerReachable } } };
+  });
+
+  await app.register(marketRoutes, { prefix: "/api/v1/market", market });
+
   return app;
+}
+
+declare module "fastify" {
+  interface FastifyInstance {
+    market: MarketService;
+  }
 }

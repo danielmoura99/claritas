@@ -692,7 +692,7 @@ O agente executor deve trabalhar **incrementalmente e com evidências**:
 |---|---|---|---|
 | 0. Auditoria design system | **CONCLUÍDA** (14/10) | `docs/DESIGN_SYSTEM_AUDIT.md`, `docs/screenshots/baseline/*` (9 capturas, 3 rotas × 3 viewports), commit `3363722` | — |
 | 1. Estrutura Node/Fastify + contratos | **CONCLUÍDA** (14/10) | npm workspaces `packages/*`,`services/*`; `packages/contracts` (Zod 4); `services/api` Fastify 5 com `/health` (curl 200 + `x-request-id`); `.env.example`; `npm test` 14/14, `typecheck`, `lint`, `next build` OK | — |
-| 2. Binance REST | **NÃO INICIADA** | — | Implementar provider real, testes |
+| 2. Binance REST | **CONCLUÍDA** (14/10) | `BinanceSpotProvider` + `MarketService`; rotas `/api/v1/market/{assets,assets/:symbol,quote,quotes,candles}` e `/ready`; curl real BTCUSDT/5m OK; erros 400/404/503/504 padronizados; testes: 43 unitários (normalização UTC/decimal/flag x, timeout, 5xx com backoff, 429/418 + Retry-After, -1121, rotas com fixtures isoladas, guarda "sem dados fictícios") + 5 integração real (`npm run test:integration`) | — |
 | 3. Binance WebSocket / Claritas stream | **NÃO INICIADA** | — | Subscription, reconexão, backfill |
 | 4. Chart live com identidade Claritas | **NÃO INICIADA** | — | Wrapper visual + screenshots |
 | 5. Motor analítico real | **NÃO INICIADA** | — | Definir fórmulas e evidências |
