@@ -18,6 +18,7 @@ Formato: situação → opções → trade-off → decisão → data → arquivo
 - **Opções:** (a) usar o servidor do sistema — exige credenciais e mexe em ambiente alheio; (b) `embedded-postgres` (baixa binários); (c) cluster isolado do projeto criado com os binários PG já instalados (`initdb`/`pg_ctl`) em `.data/postgres`, porta própria.
 - **Decisão:** (c) para desenvolvimento/testes locais via `scripts/db-local.mjs` (lê `PG_BIN` ou PATH). Em qualquer outro ambiente basta um `DATABASE_URL` PostgreSQL. A API funciona sem banco (recursos de mercado não dependem dele); rotas de persistência respondem 503 explícito se o banco estiver indisponível.
 - **Data:** 14/10/2026.
+- **Atualização 15/10/2026:** por decisão do responsável, o banco do projeto passa a ser um **PostgreSQL gerenciado no Neon** (`DATABASE_URL` no `.env`). O cluster local fica restrito aos testes automatizados (`npm run test:db`), que criam e removem um banco descartável próprio e recusam hosts não locais — nenhum teste toca o Neon. `prisma migrate reset` não é usado (o Prisma o bloqueia para agentes de IA sem consentimento explícito, e ele apagaria dados).
 
 ## ADR-015 — Semântica do "Relatório de Fechamento" para cripto 24/7
 - **Situação:** a tela original era "Relatório de fechamento" de pregão B3; a Binance Spot negocia 24/7 e não há fechamento.

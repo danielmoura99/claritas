@@ -5,6 +5,7 @@ import { toChartNumber, type MarketAsset } from "@claritas/contracts";
 import { Icon, Input, WatchRow } from "@/design-system";
 import { useAssetSearch, useFeaturedAssets } from "@/lib/market/use-assets";
 import { useQuotes } from "@/lib/market/use-quotes";
+import { useWatchlist } from "@/lib/market/use-persistence";
 
 /** Seletor de ativo: a watchlist vive num popover para o gráfico continuar quieto (como no template). */
 export function SymbolPicker({ symbol, asset, onSelect, extraSymbols = [] }: { symbol: string; asset: MarketAsset | null; onSelect: (s: string) => void; extraSymbols?: string[] }) {
@@ -13,7 +14,14 @@ export function SymbolPicker({ symbol, asset, onSelect, extraSymbols = [] }: { s
   const ref = React.useRef<HTMLDivElement>(null);
   const { assets: featured } = useFeaturedAssets();
   const searched = useAssetSearch(q);
-  const list = searched ?? featured;
+  const { watchlist } = useWatchlist();
+  // Sem busca: watchlist persistida primeiro, depois os destaques (sem repetir).
+  const watchAssets = React.useMemo(() => (watchlist?.items ?? []).map((i) => ({ symbol: i.symbol, displayName: `${i.baseAsset}/${i.quoteAsset}` })), [watchlist]);
+  const list: { symbol: string; displayName: string }[] = React.useMemo(
+    () => searched ?? [...watchAssets, ...featured.filter((a) => !watchAssets.some((w) => w.symbol === a.symbol))],
+    [searched, watchAssets, featured],
+  );
+  const watchCount = searched ? 0 : watchAssets.length;
   const listSymbols = React.useMemo(() => (open ? [...new Set([...list.map((a) => a.symbol), ...extraSymbols])].slice(0, 30) : []), [open, list, extraSymbols]);
   const { quotes } = useQuotes(listSymbols);
 
@@ -45,20 +53,23 @@ export function SymbolPicker({ symbol, asset, onSelect, extraSymbols = [] }: { s
         <div className="absolute -left-1.5 top-full mt-2.5 w-85 rounded-lg bg-raised p-1.5 shadow-pop" style={{ zIndex: "var(--z-dropdown)", animation: "cl-pop var(--dur-fast) var(--ease-out)" }}>
           <Input icon="search" placeholder="Buscar par Spot (ex.: AVAX)" size="sm" value={q} onChange={(e) => setQ(e.target.value)} autoFocus aria-label="Buscar par" style={{ margin: "var(--space-1) var(--space-1) var(--space-3)" }} />
           <div className="max-h-96 overflow-y-auto" role="listbox">
-            {list.map((a) => {
+            {list.map((a, idx) => {
               const quote = quotes[a.symbol];
               const pick = () => { onSelect(a.symbol); setOpen(false); setQ(""); };
+              const header = !searched && (idx === 0 || idx === watchCount) ? <div key={`h-${idx}`} className="cl-label px-3.5 pb-1 pt-2.5">{idx < watchCount ? "Watchlist" : "Destaques"}</div> : null;
               // Sem cotação recebida ainda: linha neutra com "—" (nunca um preço fictício).
               if (!quote) {
                 return (
-                  <button key={a.symbol} type="button" onClick={pick} className="flex h-12 w-full cursor-pointer items-center justify-between rounded-md border-0 bg-transparent px-3.5 text-left hover:bg-hover">
+                  <React.Fragment key={a.symbol}>{header}
+                  <button type="button" onClick={pick} className="flex h-12 w-full cursor-pointer items-center justify-between rounded-md border-0 bg-transparent px-3.5 text-left hover:bg-hover">
                     <span className="flex flex-col gap-1"><span className="font-mono text-xs font-semibold text-fg">{a.symbol}</span><span className="text-xs text-fg-tertiary">{a.displayName}</span></span>
                     <span className="font-mono text-xs text-fg-disabled">—</span>
                   </button>
+                  </React.Fragment>
                 );
               }
               return (
-                <WatchRow key={a.symbol} symbol={a.symbol} name={a.displayName} price={toChartNumber(quote.lastPrice)} change={toChartNumber(quote.priceChangePercent)} selected={a.symbol === symbol} onClick={pick} />
+                <React.Fragment key={a.symbol}>{header}<WatchRow symbol={a.symbol} name={a.displayName} price={toChartNumber(quote.lastPrice)} change={toChartNumber(quote.priceChangePercent)} selected={a.symbol === symbol} onClick={pick} /></React.Fragment>
               );
             })}
             {list.length === 0 && <div className="px-3 py-4 font-mono text-xs text-fg-tertiary">{q.trim().length >= 2 ? "nenhum par Spot em negociação encontrado" : "carregando ativos…"}</div>}

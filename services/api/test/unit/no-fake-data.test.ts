@@ -21,7 +21,8 @@ function walk(dir: string): string[] {
   }
   return entries.flatMap((name) => {
     const p = join(dir, name);
-    if (name === "node_modules" || name.endsWith(".test.ts")) return [];
+    // node_modules e o Prisma Client gerado são código de terceiros, não runtime escrito aqui.
+    if (name === "node_modules" || name === "generated" || name.endsWith(".test.ts")) return [];
     return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx|mjs|js)$/.test(name) ? [p] : [];
   });
 }

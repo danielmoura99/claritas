@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Standalone reference HTMLs + vendored UMD scripts (not app code).
     "design-system/reference/**",
+    // Prisma Client gerado (prisma generate).
+    "services/api/src/generated/**",
   ]),
 ]);
 

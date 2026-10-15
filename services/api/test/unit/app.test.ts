@@ -48,3 +48,12 @@ describe("config", () => {
     expect(() => parseEnv({ MARKET_DEFAULT_INTERVAL: "2h" })).toThrow();
   });
 });
+
+describe("sem banco configurado", () => {
+  it("rotas de persistência respondem 503 DB_UNAVAILABLE e o resto da API segue de pé", async () => {
+    const res = await app.inject("/api/v1/watchlist");
+    expect(res.statusCode).toBe(503);
+    expect(res.json().error.code).toBe("DB_UNAVAILABLE");
+    expect((await app.inject("/health")).statusCode).toBe(200);
+  });
+});

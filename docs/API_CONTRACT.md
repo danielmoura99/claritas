@@ -50,7 +50,10 @@ Toda resposta traz `x-request-id` (aceita um `x-request-id` válido do cliente p
 | GET | `/api/v1/analysis?symbol=&interval=` | ver §Análise (Etapa 5) |
 | GET | `/api/v1/scanner?...` | ver §Scanner (Etapa 6) |
 | GET | `/api/v1/report?...` | ver §Relatório (Etapa 7) |
-| GET/PUT/DELETE | `/api/v1/watchlist...`, `/api/v1/preferences/:clientId` | ver §Persistência (Etapa 8) |
+| GET | `/api/v1/watchlist` | `Watchlist` (`default`; itens por base/cotação, símbolo derivado) |
+| PUT / DELETE | `/api/v1/watchlist/items/:symbol` | `Watchlist` atualizada (PUT só aceita ativo negociando; idempotente) |
+| GET | `/api/v1/preferences/:clientId` | `Preference` ou `null` (cliente sem preferências) |
+| PUT | `/api/v1/preferences/:clientId` | `Preference` (upsert parcial: `symbol`, `interval`, `showAnalysis`; campos desconhecidos → 400) |
 
 `FeedStatus`: `{ symbol, interval?, status, source, lastEventAt: ISO|null, lastReceivedAt: ISO|null, latencyMs: number|null, reason? }`. `latencyMs` = `receivedAt + offsetDeRelógio − eventTime`, com o offset estimado pelo método de Cristian sobre `GET /api/v3/time` (renovado a cada 10 min).
 

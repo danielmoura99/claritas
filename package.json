@@ -14,7 +14,13 @@
     "typecheck": "tsc --noEmit && npm run typecheck --workspaces --if-present",
     "test": "vitest run --project contracts --project api --project web",
     "test:integration": "vitest run --project integration",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:db": "vitest run --project db",
+    "db:local:start": "node scripts/db-local.mjs start",
+    "db:local:stop": "node scripts/db-local.mjs stop",
+    "db:migrate": "npm exec -w @claritas/api -- prisma migrate deploy",
+    "db:seed": "npm exec -w @claritas/api -- prisma db seed",
+    "db:generate": "npm exec -w @claritas/api -- prisma generate"
   },
   "dependencies": {
     "lightweight-charts": "^5.2.1",

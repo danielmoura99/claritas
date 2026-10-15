@@ -8,18 +8,24 @@
     "dev": "tsx watch --clear-screen=false src/server.ts",
     "start": "tsx src/server.ts",
     "build": "tsc --noEmit -p .",
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@claritas/contracts": "0.1.0",
     "@fastify/cors": "11.3.0",
     "@fastify/websocket": "11.3.1",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "fastify": "5.12.5",
+    "pg": "^8.23.0",
+    "prisma": "^7.10.0",
     "tsx": "4.23.15",
     "ws": "8.22.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@types/pg": "^8.23.1",
     "@types/ws": "8.18.2"
   }
 }

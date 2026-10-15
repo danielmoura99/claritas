@@ -9,19 +9,33 @@ import { useAsset } from "@/lib/market/use-assets";
 import { useLiveCandles } from "@/lib/market/use-live-candles";
 import { useQuotes } from "@/lib/market/use-quotes";
 import { useSelection } from "@/lib/market/use-selection";
+import { usePreferenceSync } from "@/lib/market/use-persistence";
+import { useSearchParams } from "next/navigation";
 import { AnalysisRail, eventTone } from "./AnalysisRail";
 import { LiveDesk } from "./LiveDesk";
 import { Widgets } from "./Widgets";
 
 /** Pregão ao Vivo: gráfico real + leitura determinística + widgets com métricas reais. */
 export function LiveDeskScreen() {
-  const { symbol, interval } = useSelection();
+  const { symbol, interval, update } = useSelection();
+  const params = useSearchParams();
   const live = useLiveCandles(symbol, interval);
   const asset = useAsset(symbol);
   const quoteSymbols = React.useMemo(() => [symbol], [symbol]);
   const { quotes } = useQuotes(quoteSymbols);
   const quote = quotes[symbol];
   const [showAnalysis, setShowAnalysis] = React.useState(true);
+  // Preferências persistidas: restaura último ativo/intervalo se a URL não trouxer seleção; salva as mudanças.
+  usePreferenceSync({
+    symbol,
+    interval,
+    showAnalysis,
+    urlHasSelection: params.has("symbol") || params.has("interval"),
+    restore: (p) => {
+      if (p.symbol || p.interval) update({ symbol: p.symbol, interval: p.interval });
+      if (p.showAnalysis !== undefined) setShowAnalysis(p.showAnalysis);
+    },
+  });
 
   // A análise só é recalculada quando FECHA uma barra (não a cada tick).
   const lastClosed = React.useMemo(() => {

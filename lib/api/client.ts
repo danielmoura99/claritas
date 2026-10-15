@@ -4,7 +4,9 @@ import {
   ApiErrorSchema,
   CandleSchema,
   MarketAssetSchema,
+  PreferenceSchema,
   QuoteSchema,
+  WatchlistSchema,
   ReportSchema,
   ScannerResultSchema,
   marketEnvelope,
@@ -14,7 +16,10 @@ import {
   type Interval,
   type MarketAsset,
   type MarketEnvelope,
+  type Preference,
+  type PreferenceUpdate,
   type Quote,
+  type Watchlist,
   type Report,
   type ScannerResult,
 } from "@claritas/contracts";
@@ -31,6 +36,25 @@ export class ApiClientError extends Error {
     super(message);
     this.name = "ApiClientError";
   }
+}
+
+/** PUT/DELETE tipado com o mesmo tratamento de erro do GET. */
+export async function apiSend<T extends z.ZodType>(method: "PUT" | "DELETE", path: string, schema: T, body?: unknown): Promise<z.infer<T>> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, { method, headers: body === undefined ? { accept: "application/json" } : { accept: "application/json", "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
+  } catch {
+    throw new ApiClientError("NETWORK", "API Claritas inacessível");
+  }
+  const json: unknown = await res.json().catch(() => undefined);
+  if (!res.ok) {
+    const parsed = ApiErrorSchema.safeParse(json);
+    if (parsed.success) throw new ApiClientError(parsed.data.error.code, parsed.data.error.message, res.status);
+    throw new ApiClientError("INTERNAL", `API respondeu ${res.status}`, res.status);
+  }
+  const parsed = schema.safeParse(json);
+  if (!parsed.success) throw new ApiClientError("PROVIDER_BAD_RESPONSE", "Resposta da API fora do contrato", res.status);
+  return parsed.data;
 }
 
 /** GET tipado: valida a resposta com Zod — dado fora do contrato nunca chega à interface. */
@@ -82,6 +106,16 @@ export const scannerApi = {
 export const reportApi = {
   get: (p: { symbol: string; window: "rolling_24h" | "day"; date?: string; tz: "America/Sao_Paulo" | "UTC" }, signal?: AbortSignal): Promise<MarketEnvelope<Report>> =>
     apiGet(`/api/v1/report?${qs(p)}`, marketEnvelope(ReportSchema), { signal }),
+};
+
+const dataOf = <T extends z.ZodType>(t: T) => z.object({ data: t });
+
+export const persistenceApi = {
+  watchlist: (signal?: AbortSignal): Promise<Watchlist> => apiGet("/api/v1/watchlist", dataOf(WatchlistSchema), { signal }).then((r) => r.data),
+  add: (symbol: string): Promise<Watchlist> => apiSend("PUT", `/api/v1/watchlist/items/${encodeURIComponent(symbol)}`, dataOf(WatchlistSchema)).then((r) => r.data),
+  remove: (symbol: string): Promise<Watchlist> => apiSend("DELETE", `/api/v1/watchlist/items/${encodeURIComponent(symbol)}`, dataOf(WatchlistSchema)).then((r) => r.data),
+  getPreferences: (clientId: string, signal?: AbortSignal): Promise<Preference | null> => apiGet(`/api/v1/preferences/${clientId}`, dataOf(PreferenceSchema.nullable()), { signal }).then((r) => r.data),
+  putPreferences: (clientId: string, patch: PreferenceUpdate): Promise<Preference> => apiSend("PUT", `/api/v1/preferences/${clientId}`, dataOf(PreferenceSchema), patch).then((r) => r.data),
 };
 
 /** Mensagem curta, no tom Claritas, para cada erro. */

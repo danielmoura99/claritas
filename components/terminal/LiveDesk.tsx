@@ -10,6 +10,7 @@ import { useLiveCandles } from "@/lib/market/use-live-candles";
 import { useQuotes } from "@/lib/market/use-quotes";
 import { UI_INTERVALS, useSelection } from "@/lib/market/use-selection";
 import { SymbolPicker } from "./SymbolPicker";
+import { useWatchlist } from "@/lib/market/use-persistence";
 
 export interface ChartOverlays {
   lines?: ChartLine[];
@@ -34,6 +35,8 @@ export function ChartStage({ overlays, footerExtra, live }: { overlays?: ChartOv
   const { quotes } = useQuotes(quoteSymbols);
   const quote = quotes[symbol];
   const { candles, seriesKey, loading, error, status, feed, lastUpdateAt, reload } = live;
+  const wl = useWatchlist();
+  const starred = wl.has(symbol);
   const bars = React.useMemo(() => {
     try {
       return candles.map(candleToBar);
@@ -67,6 +70,8 @@ export function ChartStage({ overlays, footerExtra, live }: { overlays?: ChartOv
         </div>
         <div className="flex-1" />
         <SegmentedControl size="sm" options={UI_INTERVALS} value={interval} onChange={(v) => setInterval(v as Interval)} />
+        <IconButton icon="star" size="sm" active={starred} disabled={wl.unavailable || wl.pending}
+          label={wl.unavailable ? "Watchlist indisponível (banco de dados fora)" : starred ? "Remover da watchlist" : "Adicionar à watchlist"} onClick={() => void wl.toggle(symbol)} />
         <IconButton icon="refresh-cw" label="Recarregar histórico" size="sm" onClick={reload} />
       </div>
       <div className="min-h-64 flex-1 px-2.5 md:min-h-0">

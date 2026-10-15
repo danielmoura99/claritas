@@ -19,6 +19,9 @@ import { ScannerService } from "./modules/scanner/scanner-service";
 import { scannerRoutes } from "./modules/scanner/routes";
 import { ReportService } from "./modules/report/report-service";
 import { reportRoutes } from "./modules/report/routes";
+import { Database } from "./infrastructure/db";
+import { PreferenceRepository, WatchlistRepository } from "./modules/watchlist/repositories";
+import { persistenceRoutes } from "./modules/watchlist/routes";
 
 export interface AppOptions {
   env: Env;
@@ -26,10 +29,12 @@ export interface AppOptions {
   /** Injeção para testes; em produção é criado a partir do env. */
   provider?: MarketDataProvider;
   streamSource?: MarketStreamSource;
+  /** Banco injetável para testes; padrão: DATABASE_URL (ou nenhum). */
+  database?: Database;
 }
 
 /** Monta a instância Fastify (sem escutar porta) — usada pelo servidor e pelos testes via `inject`. */
-export async function buildApp({ env, logger, provider: injectedProvider, streamSource }: AppOptions): Promise<FastifyInstance> {
+export async function buildApp({ env, logger, provider: injectedProvider, streamSource, database }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: logger ?? { level: env.LOG_LEVEL, redact: ["req.headers.authorization", "req.headers.cookie"] },
     genReqId: (req) => {
@@ -88,7 +93,8 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
   const readinessCache = new TtlCache<boolean>(4);
   app.get("/ready", async () => {
     const providerReachable = await readinessCache.getOrLoad("provider", 15_000, () => provider.ping());
-    return { status: "ready", checks: { provider: { id: provider.id, reachable: providerReachable }, stream: app.hub.stats() } };
+    const database = db.configured ? { configured: true, reachable: await readinessCache.getOrLoad("db", 5_000, () => db.ping()) } : { configured: false, reachable: false };
+    return { status: "ready", checks: { provider: { id: provider.id, reachable: providerReachable }, stream: app.hub.stats(), database } };
   });
 
   await app.register(marketRoutes, { prefix: "/api/v1/market", market });
@@ -98,6 +104,9 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
   await app.register(scannerRoutes, { prefix: "/api/v1/scanner", scanner });
   const report = new ReportService(market);
   await app.register(reportRoutes, { prefix: "/api/v1/report", report });
+  const db = database ?? new Database(env.DATABASE_URL);
+  await app.register(persistenceRoutes, { prefix: "/api/v1", watchlist: new WatchlistRepository(db), preferences: new PreferenceRepository(db), market });
+  app.addHook("onClose", async () => db.close());
 
   let clockOffsetMs = 0;
   const refreshClockOffset = async () => {
