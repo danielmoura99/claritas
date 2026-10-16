@@ -1,6 +1,6 @@
 # Deploy, segurança e operação (Etapa 9)
 
-> **Status:** artefatos prontos, **nenhum deploy feito.** O responsável vetou publicação externa nesta fase e não há Docker no ambiente de desenvolvimento para validar a imagem. O que falta para publicar está em "Pendências".
+> **Status:** topologia escolhida pelo responsável: **Vercel (web) + Render free (API) + Neon (banco)**, um único repositório GitHub. `render.yaml` usa runtime Node nativo no plano free; o `Dockerfile` fica como alternativa (não validado — sem Docker no ambiente de desenvolvimento).
 
 ## Topologia proposta (ADR-009 — proposta, aguardando decisão de custo/região)
 
@@ -24,12 +24,14 @@ Região da API: a Binance pública (`data-api.binance.vision`) responde de AWS T
 
 TLS: Vercel e Render terminam TLS; a API escuta HTTP interno (`API_HOST=0.0.0.0`) e o WebSocket público vira `wss://` automaticamente.
 
-## Passo a passo (quando autorizado)
+## Passo a passo (Vercel + Render free + Neon)
 
-1. Neon: criar *branch* `pre-release` e rodar `npm run db:migrate` contra ele; depois em produção (o `preDeployCommand` do `render.yaml` já faz `npm run db:migrate`).
-2. API: `docker build -f services/api/Dockerfile -t claritas-api .` → validar `GET /health` e `/ready` localmente → criar o serviço pelo Blueprint `render.yaml` e preencher `DATABASE_URL` e `CORS_ORIGIN`.
-3. Web: importar o repositório na Vercel com `NEXT_PUBLIC_CLARITAS_API_URL`/`WS_URL` apontando para a API.
-4. Smoke test do navegador público: `npm run test:e2e -- --project=live` com `baseURL` apontando para o domínio (ajustar `playwright.config.ts`).
+1. **Banco:** as migrações já estão aplicadas no Neon. Em mudanças futuras de schema, rodar `npm run db:migrate` localmente (o plano free do Render não tem `preDeployCommand`).
+2. **GitHub:** um repositório só com o monorepo inteiro (`.env` fica fora pelo `.gitignore`).
+3. **API no Render:** *New → Blueprint* apontando para o repositório (lê `render.yaml`) e preencher `DATABASE_URL` e `CORS_ORIGIN`. A API usa a variável `PORT` do Render quando `API_PORT` não está definido. Conferir `https://<api>.onrender.com/health` e `/ready`.
+4. **Web na Vercel:** importar o mesmo repositório (Root Directory = raiz, preset Next.js) com `NEXT_PUBLIC_CLARITAS_API_URL=https://<api>.onrender.com` e `NEXT_PUBLIC_CLARITAS_WS_URL=wss://<api>.onrender.com/api/v1/market/stream`. São embutidas no build: alterou, refaça o deploy.
+5. **Fechar o CORS:** `CORS_ORIGIN` no Render = URL exata da Vercel (sem barra final). Domínios de preview da Vercel ficam bloqueados, a menos que sejam adicionados à lista (separada por vírgula).
+6. **Limitação do free:** a API dorme após 15 min sem tráfego; o primeiro acesso depois disso leva cerca de 1 min e a interface mostra o feed reconectando até ela acordar.
 
 ## Segurança e robustez já implementadas
 
@@ -57,8 +59,8 @@ Reavaliar a cada atualização do Prisma 7.x e do Next 16.x.
 
 | Item | Bloqueio | Como concluir |
 |---|---|---|
-| Deploy público (web + API) | Vetado pelo responsável; contas Vercel/Render não disponíveis | Seguir o passo a passo acima |
+| Deploy público (web + API) | Executado pelo responsável | Seguir o passo a passo acima |
 | Validar a imagem Docker | Sem Docker no ambiente | `docker build` + `docker run -p 4000:4000 --env-file .env claritas-api` |
 | CSP com nonce no Next | Requer middleware de nonce e revisão dos scripts inline do Next 16 | Implementar via `proxy`/middleware conforme `node_modules/next/dist/docs` |
 | Termos de uso/redistribuição de dados Binance | Revisão jurídica/comercial | Revisar os Termos da Binance antes de abrir a terceiros |
-| Decisão final do host da API (ADR-009) | Custo e região | Escolher Render/Fly/VPS; preferir região próxima a Tóquio |
+| Plano pago da API (sem hibernação) | Custo | Trocar `plan: free` por `starter` no `render.yaml` |

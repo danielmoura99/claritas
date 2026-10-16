@@ -48,7 +48,9 @@ const EnvSchema = z.object({
 export type Env = z.infer<typeof EnvSchema>;
 
 export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  const result = EnvSchema.safeParse(source);
+  // Hosts como Render/Heroku injetam a porta em `PORT`; `API_PORT` explícito tem prioridade.
+  const input = source.API_PORT === undefined && source.PORT !== undefined ? { ...source, API_PORT: source.PORT } : source;
+  const result = EnvSchema.safeParse(input);
   if (!result.success) {
     const issues = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Configuração inválida: ${issues}`);

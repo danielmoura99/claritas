@@ -1,18 +1,27 @@
-# Blueprint Render para a API Claritas (processo persistente com WebSocket). NÃO aplicado — ver docs/DEPLOY.md.
+# Blueprint Render para a API Claritas (processo persistente com WebSocket) — ver docs/DEPLOY.md.
+# Plano gratuito: runtime Node nativo (o Dockerfile em services/api fica como alternativa, não validado).
+# O serviço free dorme após 15 min sem tráfego; o primeiro acesso depois disso leva ~1 min.
+# Migrações: rodar `npm run db:migrate` localmente contra o Neon (o free não tem preDeployCommand).
 services:
   - type: web
     name: claritas-api
-    runtime: docker
-    dockerfilePath: services/api/Dockerfile
-    dockerContext: .
-    plan: starter
+    runtime: node
+    plan: free
+    region: singapore # mais perto da Binance pública (AWS Tóquio)
+    buildCommand: npm ci && npm run db:generate
+    startCommand: npm run start:api
     healthCheckPath: /health
-    preDeployCommand: npm run db:migrate
     envVars:
+      - key: NODE_VERSION
+        value: 24.11.1
+      - key: NODE_ENV
+        value: production
+      - key: API_HOST
+        value: 0.0.0.0
       - key: DATABASE_URL
         sync: false # connection string do Neon (secreta)
       - key: CORS_ORIGIN
-        sync: false # ex.: https://claritas.example.com
+        sync: false # URL exata do frontend na Vercel, ex.: https://claritas.vercel.app
       - key: MARKET_DATA_PROVIDER
         value: binance_spot
       - key: BINANCE_SPOT_REST_URL

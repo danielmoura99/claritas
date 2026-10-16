@@ -47,6 +47,11 @@ describe("config", () => {
     expect(() => parseEnv({ API_PORT: "abc" })).toThrow(/API_PORT/);
     expect(() => parseEnv({ MARKET_DEFAULT_INTERVAL: "2h" })).toThrow();
   });
+
+  it("usa PORT do host quando API_PORT não está definido", () => {
+    expect(parseEnv({ PORT: "10000" }).API_PORT).toBe(10000);
+    expect(parseEnv({ PORT: "10000", API_PORT: "4000" }).API_PORT).toBe(4000);
+  });
 });
 
 describe("sem banco configurado", () => {
