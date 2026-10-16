@@ -7,7 +7,8 @@ services:
     name: claritas-api
     runtime: node
     plan: free
-    region: singapore # mais perto da Binance pública (AWS Tóquio)
+    # Singapura (mais perto da Binance) teve o IP de saída compartilhado banido pela Binance (418/429).
+    region: frankfurt
     buildCommand: npm ci && npm run db:generate
     startCommand: npm run start:api
     healthCheckPath: /health
