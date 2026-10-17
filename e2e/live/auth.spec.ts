@@ -19,7 +19,7 @@ test("sem sessão vai para /entrar; senha errada é recusada; a certa volta ao d
   expect(await page.evaluate(() => document.cookie)).not.toContain("claritas_session");
 });
 
-test("criar conta entra no terminal; Sair encerra a sessão no servidor", async ({ page }) => {
+test("criar conta entra no terminal sem acesso comercial; Sair encerra a sessão no servidor", async ({ page }) => {
   const email = `e2e+${Date.now()}@claritas.test`;
   await page.goto("/entrar");
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
@@ -29,7 +29,10 @@ test("criar conta entra no terminal; Sair encerra a sessão no servidor", async 
   await page.getByRole("button", { name: "Criar conta e entrar" }).click();
   await expect(page).toHaveURL(/localhost:3000\/$/);
   await expect(page.getByText("Conta Nova E2E")).toBeVisible();
-  await expect(page.locator("canvas").first()).toBeVisible();
+  // Deny-by-default (Plano 02): conta nova ainda não tem acesso comercial — nada de gráfico nem chamada de mercado.
+  await expect(page.getByText("Sua conta está pronta; o acesso ainda não foi liberado.")).toBeVisible();
+  await expect(page.locator("canvas")).toHaveCount(0);
+  expect((await page.request.get("/api/v1/market/quote?symbol=BTCUSDT")).status()).toBe(403);
   // E-mail repetido é avisado no campo.
   const dup = await page.request.post("/api/v1/auth/register", { data: { name: "X", email, password: "outra-frase-longa" } });
   expect(dup.status()).toBe(409);

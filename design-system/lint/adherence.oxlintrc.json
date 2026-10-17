@@ -153,6 +153,26 @@
         "message": "<Input> size must be one of 'sm' | 'md' | 'lg'."
       },
       {
+        "selector": "JSXOpeningElement[name.name='DataTable'] > JSXAttribute > JSXIdentifier[name!=/^(?:columns|rows|rowKey|onRowClick|rowLabel|loading|empty|caption|dense|key|ref|className|style|children)$/]",
+        "message": "<DataTable> doesn't accept that prop. Declared props: columns, rows, rowKey, onRowClick, rowLabel, loading, empty, caption, dense, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatTile'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|value|hint|tone|kind|key|ref|className|style|children)$/]",
+        "message": "<StatTile> doesn't accept that prop. Declared props: label, value, hint, tone, kind, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatTile'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:default|sand|muted)$/]",
+        "message": "<StatTile> tone must be one of 'default' | 'sand' | 'muted'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AccessNotice'] > JSXAttribute > JSXIdentifier[name!=/^(?:tone|eyebrow|title|actions|icon|fill|key|ref|className|style|children)$/]",
+        "message": "<AccessNotice> doesn't accept that prop. Declared props: tone, eyebrow, title, actions, icon, fill, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AccessNotice'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:lock|info|warn)$/]",
+        "message": "<AccessNotice> tone must be one of 'lock' | 'info' | 'warn'."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='TextLink'] > JSXAttribute > JSXIdentifier[name!=/^(?:href|onClick|disabled|key|ref|className|style|children)$/]",
         "message": "<TextLink> doesn't accept that prop. Declared props: href, onClick, disabled, style."
       },
@@ -322,6 +342,15 @@
         "replaces": []
       },
       "TextLink": {
+        "replaces": []
+      },
+      "DataTable": {
+        "replaces": []
+      },
+      "StatTile": {
+        "replaces": []
+      },
+      "AccessNotice": {
         "replaces": []
       },
       "LiveIndicator": {

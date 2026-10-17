@@ -984,17 +984,17 @@ O fato de o gateway próprio já operar em outros produtos **não comprova autom
 
 | Etapa | Estado | Evidência/PR/commit/testes | Próximo passo |
 |---|---|---|---|
-| 0 — Auditoria | **CONCLUÍDA** (17/10) | `docs/SAAS_AUDIT.md` (matriz EXISTE/FALTA/AJUSTAR/DESCONHECIDO), `docs/SAAS_DECISIONS.md` | — |
-| 1 — Roles/auth | **CONCLUÍDA (backend)** (17/10) | `User.role`/`status` (migração `20261017100000_roles`), política de rotas deny-by-default (`modules/authorization/route-policy.ts`), login bloqueia conta não ativa, suspensão revoga sessões, CLI `npm run admin:role`; testes `route-policy.test.ts` + `saas.db.test.ts` | UI `/admin` (Etapa 4) |
-| 2 — Prisma comercial | **CONCLUÍDA** (17/10) | migração aditiva `20261017110000_commercial` (planos versionados, features, assinaturas com snapshot, overrides, quotas, auditoria append-only por trigger, eventos de produto, estrutura do gateway sem integração), índice parcial "uma corrente por usuário", CHECKs; seed idempotente só do catálogo; aplicada só em bancos locais | migrar Neon só com autorização (R-03) |
-| 3 — Entitlements | **CONCLUÍDA (backend)** (17/10) | `EntitlementsService` + avaliador puro (`evaluate.ts`), `GET /api/v1/me/access`, enforcement em mercado/análise/scanner/relatório/watchlist/WS (revalidação 60 s + revogação imediata), quota atômica e idempotente; testes `entitlements.test.ts` (16) e `saas.db.test.ts` (21) | `FeatureGate` no frontend |
-| 4 — Admin usuários | EM PROGRESSO | API `/api/v1/admin/users*` (lista paginada/filtros, detalhe com acesso efetivo e linha do tempo, suspensão, concessões) testada | telas `/admin` |
-| 5 — Planos/manual | **CONCLUÍDA (backend)** | API de planos (rascunho/publicar/versão/arquivar) e assinaturas manuais (teste/manual/cortesia, prorrogar, revogar, expiração pelo relógio + job) testadas | telas `/admin/plans` e `/admin/subscriptions` |
-| 6 — Conta e pricing | NÃO INICIADA | `GET /api/v1/plans/public`, `/me/subscription` prontos | telas `/conta`, `/planos` |
-| 7 — Gateway próprio | **ADIADA — AGUARDANDO INTEGRAÇÃO FUTURA** (decisão do responsável, 17/10) | só estrutura de dados (`GatewayCustomerLink`, `GatewayEvent`, campos externos na `Subscription`); `GET /api/v1/admin/integrations/payments` responde `DEFERRED` | auditoria do contrato do gateway quando liberada |
-| 8 — Onboarding | EM PROGRESSO | `GET/PUT /api/v1/me/onboarding` | UI do onboarding e estados de acesso |
-| 9 — Métricas | EM PROGRESSO | `ProductEvent` + `GET /api/v1/admin/summary` (receita `PENDING_GATEWAY`) | painel `/admin` |
-| 10 — Hardening | EM PROGRESSO | lint/typecheck/unit/db verdes a cada etapa | E2E, regressão visual, runbooks |
+| 0 — Auditoria | **CONCLUÍDA** (17/10) | `docs/SAAS_AUDIT.md`, `docs/SAAS_DECISIONS.md` | — |
+| 1 — Roles/auth | **CONCLUÍDA** (17/10) | `User.role/status` (migração `20261017100000_roles`); política de rotas deny-by-default; login recusa conta bloqueada; suspensão revoga sessões e streams; CLI auditado `npm run admin:role`; `/admin` protegido na API e na UI (`AdminFrame`) | promover o 1º admin em produção (autorização) |
+| 2 — Prisma comercial | **CONCLUÍDA** (17/10) | migração aditiva `20261017110000_commercial` (+ índice parcial, CHECKs, trigger append-only); seed idempotente só do catálogo; testada do zero em banco local | aplicar no Neon só com autorização |
+| 3 — Entitlements | **CONCLUÍDA** (17/10) | `EntitlementsService`/`evaluate.ts`, `/me/access`, enforcement em mercado/análise/scanner/relatório/watchlist/WS, quotas atômicas e idempotentes, `FeatureGate`/`AccessBanner` no frontend | — |
+| 4 — Admin usuários | **CONCLUÍDA** (17/10) | `/admin`, `/admin/usuarios`, `/admin/usuarios/[id]` (acesso efetivo com motivo, suspender/reativar, concessões com prazo e motivo, linha do tempo), `/admin/auditoria`; `DataTable`/`StatTile` no DS | — |
+| 5 — Planos/manual | **CONCLUÍDA** (17/10) | `/admin/planos` (rascunho → publicar imutável → nova versão), `/admin/assinaturas`, concessão teste/manual/cortesia com prazo, prorrogar/revogar, expiração pelo relógio + job | aprovar planos/preços (D-02) |
+| 6 — Conta e pricing | **CONCLUÍDA** (17/10) | `/conta` (plano, origem, validade, benefícios, cobrança/cancelamento honestos), `/planos` (só publicados; "preço a definir"; sem checkout), CTAs de upgrade nos bloqueios | preços aprovados → checkout externo na Etapa 7 |
+| 7 — Gateway próprio | **ADIADA — AGUARDANDO INTEGRAÇÃO FUTURA** (decisão do responsável, 17/10) | só estrutura (`GatewayCustomerLink`, `GatewayEvent`, campos externos e origem `OWN_GATEWAY` reservados); `/admin/integracoes` e API respondem `DEFERRED` | auditar o contrato do gateway (§9.2) quando liberado |
+| 8 — Onboarding | **CONCLUÍDA (partes independentes do gateway)** (17/10) | onboarding de 3 passos retomável/dispensável (`/me/onboarding`), estados de acesso (sem liberação, teste perto do fim/encerrado, conta bloqueada, limite), `/ajuda` (FAQ + suporte configurável) | e-mails transacionais (D-07); estados de pagamento (Etapa 7) |
+| 9 — Métricas | **CONCLUÍDA (sem receita)** (17/10) | `ProductEvent` + `/admin` com fórmulas em `docs/SAAS_METRICS.md`; receita/MRR/conversão marcados PENDENTES | receita após Etapa 7 |
+| 10 — Hardening | **CONCLUÍDA no escopo atual** (17/10) | lint, typecheck, 139 unitários, 36 de banco real, 13 de integração Binance, 41 visuais (Playwright), build; `docs/SAAS_SECURITY.md`, `SAAS_RUNBOOK.md`, `SAAS_ROUTES.md` | Playwright `live` (porta 4000 ocupada por API do responsável ligada ao Neon); testes de webhook (Etapa 7); revisão jurídica |
 
 #### Execução [2026-10-17 UTC] — Etapas 0 a 3 e 5 (backend)
 - Estado: Etapa 0 CONCLUÍDA; Etapas 1, 2, 3 e 5 CONCLUÍDAS no backend; 4, 8 e 9 EM PROGRESSO; 7 ADIADA.
@@ -1005,6 +1005,18 @@ O fato de o gateway próprio já operar em outros produtos **não comprova autom
 - Critérios de aceite validados: USER → 403 em admin; ADMIN → 200; suspenso bloqueado (sessões revogadas, login 403, WS fechado com 4403); deny-by-default; expiração pelo relógio sem depender do job; DENY > ALLOW; concessão pontual com prazo; quota concorrente (10 requisições, limite 3 → 3); assinatura manual sem pagamento; plano publicado imutável; auditoria append-only no banco.
 - Pendências: frontend (Etapas 4, 5, 6, 8, 9), E2E, documentação de rotas/segurança/runbook.
 - Próxima ação exata: componentes de design system para tabela e aviso de acesso; cliente/estado de acesso no frontend; `FeatureGate` nas três telas; páginas `/admin/*`, `/conta`, `/planos`.
+
+#### Execução [2026-10-17 UTC] — Etapas 4, 5, 6, 8, 9 e 10 (frontend, docs e verificação)
+- Estado: Etapas 0–6 e 8–10 CONCLUÍDAS no escopo atual; Etapa 7 ADIADA.
+- Código existente reutilizado: shell do terminal, `AuthGate`, `use-session`, cliente de API, design system (Panel, Badge, Button, Dialog, Input, Select, Checkbox, Tabs, TextLink), fixture de API congelada da suíte visual.
+- Arquivos criados (frontend): `design-system/components/core/{DataTable,StatTile}.tsx`, `feedback/AccessNotice.tsx` (+ `.md`, lint, showcase); `lib/api/commercial.ts`; `lib/auth/{use-access,access-copy}.ts`; `components/commercial/{FeatureGate,AccessBanner,AccountScreen,PricingScreen,HelpScreen,PublicShell,Onboarding}.tsx`; `components/admin/*`; rotas `app/(terminal)/{conta,admin/**}`, `app/(public)/{planos,ajuda}`.
+- Docs: `SAAS_ROUTES.md`, `SAAS_SECURITY.md`, `SAAS_RUNBOOK.md`, `SAAS_METRICS.md`, `SAAS_HANDOFF.md`, `SAAS_DECISIONS.md` (D-S18..D-S21), README, `.env.example`, `DEPLOY.md`.
+- Migrações executadas: só bancos locais descartáveis. **Neon não alterado.**
+- Testes: `npm run lint` OK · `npm run typecheck` OK · `npm test` 139/139 · `npm run test:db` 36/36 · `npm run test:integration` 13/13 · `playwright --project=visual` 41/41 (18 novos da área comercial; baselines revisadas a olho em 1440 e 390) · `npm run build` OK (19 rotas).
+- Critérios de aceite validados na UI: admin restrito a ADMIN sem chamadas à API administrativa; conta sem acesso não vê nem chama mercado; bloqueios com motivo e ações (planos/conta/suporte), sem checkout; cortesia/manual rotulados como "sem cobrança"; receita "pendente"; motivo obrigatório antes de qualquer concessão.
+- Pendências ou limitações: Playwright `live` não executado (porta 4000 ocupada por `npm run dev` do responsável apontando para o Neon, que ainda não tem as migrações); recuperação de senha/MFA (D-07); termos/LGPD/licença Binance (D-08/D-09); Etapa 7.
+- Próxima ação exata: com autorização — migrar Neon, promover o 1º admin e conceder acessos (runbook); rodar `npm run test:e2e` com a API local de E2E; depois auditar o contrato do gateway (Etapa 7).
+- Commit: branch `feat/saas-comercial` (ver `git log`), sem push.
 
 ### Modelo obrigatório de atualização após cada etapa
 
@@ -1049,39 +1061,39 @@ Sempre criar/atualizar `docs/SAAS_HANDOFF.md` incluindo:
 
 ### Segurança de identidade e acesso
 
-- [ ] Login **existente** foi auditado e preservado; não há sistemas de sessão duplicados.
-- [ ] Roles `USER`/`ADMIN` e estados de usuário aplicados server-side.
-- [ ] Admin inacessível a USER por URL, API direta e Server Actions.
-- [ ] Operações de usuário não expõem outros usuários (IDOR testado).
-- [ ] Bootstrap de admin é seguro e auditado; nenhuma promoção automática pública.
-- [ ] Acesso de usuário suspenso/expirado é revogado, inclusive em streams ativos.
+- [x] Login **existente** foi auditado e preservado; não há sistemas de sessão duplicados. (`SAAS_AUDIT.md` §2)
+- [x] Roles `USER`/`ADMIN` e estados de usuário aplicados server-side. (`route-policy.ts`, `saas.db.test.ts`)
+- [x] Admin inacessível a USER por URL, API direta e Server Actions. (não há Server Actions; API 403 + UI restrita — `route-policy.test.ts`, `commercial.spec.ts`)
+- [x] Operações de usuário não expõem outros usuários (IDOR testado). (`saas.db.test.ts`)
+- [x] Bootstrap de admin é seguro e auditado; nenhuma promoção automática pública. (`npm run admin:role`)
+- [x] Acesso de usuário suspenso/expirado é revogado, inclusive em streams ativos. (WS fechado com 4403 — `saas.db.test.ts`)
 
 ### Produto e design
 
-- [ ] Pregão, Scanner e Relatório existentes preservam identidade, funcionalidade e dados reais.
-- [ ] Nova área administrativa e área de conta usam tokens, fontes e componentes Claritas reais.
-- [ ] Acesso a recursos por feature/plano é aplicado no backend e visível na UI.
-- [ ] Bloqueio comercial é explicado sem layout quebrado ou falso erro técnico.
-- [ ] Regressão visual desktop e mobile verificada.
+- [x] Pregão, Scanner e Relatório existentes preservam identidade, funcionalidade e dados reais. (baselines visuais anteriores mantidas; integração Binance 13/13)
+- [x] Nova área administrativa e área de conta usam tokens, fontes e componentes Claritas reais.
+- [x] Acesso a recursos por feature/plano é aplicado no backend e visível na UI.
+- [x] Bloqueio comercial é explicado sem layout quebrado ou falso erro técnico.
+- [x] Regressão visual desktop e mobile verificada. (1440/1366/390; 41 capturas — 1920×1080 não capturado)
 
 ### Comercial e operação
 
-- [ ] Planos e benefícios são configuráveis, com versionamento ou snapshots para assinantes existentes.
-- [ ] Admin lista/filtra contas, vê detalhes e concede/revoga acesso com prazo e auditoria.
-- [ ] Quotas são aplicadas com proteção de concorrência e sem cobranças duplicadas.
-- [ ] Assinaturas manuais e cortesias são corretamente distinguíveis de pagamentos.
-- [ ] Usuário consegue consultar seu estado e benefícios.
-- [ ] **Gateway próprio existente** foi integrado ao Claritas usando apenas APIs/checkout/webhooks comprovadamente disponíveis e validado em ambiente de testes adequado. **Sem documentação, credenciais ou testes reais, reportar bloqueio de integração explicitamente; não declarar automação de assinaturas concluída.**
-- [ ] Eventos financeiros duplicados, inválidos e fora de ordem não concedem privilégios indevidos.
-- [ ] Métricas de receita excluem gratuidades e dados não conciliados.
+- [x] Planos e benefícios são configuráveis, com versionamento ou snapshots para assinantes existentes.
+- [x] Admin lista/filtra contas, vê detalhes e concede/revoga acesso com prazo e auditoria.
+- [x] Quotas são aplicadas com proteção de concorrência e sem cobranças duplicadas.
+- [x] Assinaturas manuais e cortesias são corretamente distinguíveis de pagamentos.
+- [x] Usuário consegue consultar seu estado e benefícios.
+- [ ] **Gateway próprio existente** integrado — **ADIADO por decisão do responsável (Etapa 7). Automação de assinaturas NÃO concluída.**
+- [ ] Eventos financeiros duplicados, inválidos e fora de ordem — **pendente da Etapa 7** (só estrutura de dados com unicidade `gatewayKey+externalEventId`).
+- [x] Métricas de receita excluem gratuidades e dados não conciliados. (receita marcada PENDENTE; cortesias/manuais nunca entram)
 
 ### Qualidade e handoff
 
-- [ ] Lint, typecheck e build passam.
-- [ ] Testes unitários, API/integração, E2E e autorização/quotas/webhooks pertinentes passam.
-- [ ] Migrações testadas sem destruir contas reais.
-- [ ] Runbook, README, audit, decisões, status, handoff e evidências atualizados.
-- [ ] Questões jurídicas/fiscais/licença de dados estão explicitamente aprovadas ou sinalizadas como **bloqueio para lançamento comercial**.
+- [x] Lint, typecheck e build passam.
+- [~] Testes unitários, API/integração, E2E e autorização/quotas pertinentes passam — **exceto** Playwright `live` (não executado: porta ocupada por API ligada ao Neon) e webhooks (Etapa 7).
+- [x] Migrações testadas sem destruir contas reais. (aditivas, aplicadas do zero em banco local; Neon não alterado)
+- [x] Runbook, README, audit, decisões, status, handoff e evidências atualizados.
+- [ ] Questões jurídicas/fiscais/licença de dados — **sinalizadas como bloqueio para lançamento comercial** (D-08, D-09).
 
 ### Definição de conclusão
 

@@ -80,8 +80,18 @@ export class PlanService {
     ]);
     const implemented = new Set(features.filter((f) => f.implemented).map((f) => f.key));
     return rows.map((r) => {
-      const { status: _s, publishedAt: _p, activeSubscriptions: _a, ...dto } = planToDto(r);
-      return { ...dto, features: dto.features.filter((f) => f.enabled && implemented.has(f.key)) };
+      const dto = planToDto(r);
+      return {
+        id: dto.id,
+        code: dto.code,
+        version: dto.version,
+        name: dto.name,
+        description: dto.description,
+        priceMinor: dto.priceMinor,
+        currency: dto.currency,
+        billingPeriod: dto.billingPeriod,
+        features: dto.features.filter((f) => f.enabled && implemented.has(f.key)),
+      };
     });
   }
 

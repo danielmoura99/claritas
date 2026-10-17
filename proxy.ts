@@ -17,6 +17,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Fora: repasse da API, arquivos do Next, a própria tela de entrada e arquivos com extensão.
-  matcher: ["/((?!api/|_next/|entrar|favicon\\.ico|.*\\.[A-Za-z0-9]+$).*)"],
+  // Fora: repasse da API, arquivos do Next, telas públicas (entrar, planos, ajuda) e arquivos com extensão.
+  matcher: ["/((?!api/|_next/|entrar|planos|ajuda|favicon\\.ico|.*\\.[A-Za-z0-9]+$).*)"],
 };

@@ -40,6 +40,10 @@ TLS: Vercel e Render terminam TLS; a API escuta HTTP interno (`API_HOST=0.0.0.0`
 5. **Fechar o CORS:** `CORS_ORIGIN` no Render = URL exata da Vercel (sem barra final). Domínios de preview da Vercel ficam bloqueados, a menos que sejam adicionados à lista (separada por vírgula).
 6. **Limitação do free:** a API dorme após 15 min sem tráfego; o primeiro acesso depois disso leva cerca de 1 min e a interface mostra o feed reconectando até ela acordar.
 
+## Publicar a camada comercial (Plano 02)
+
+Exige autorização do responsável. Siga `docs/SAAS_RUNBOOK.md` → "Antes do primeiro deploy desta versão": backup Neon → `npm run db:migrate` + `npm run db:seed` → promover o primeiro admin (CLI) → **conceder acesso** a quem já usava (deny-by-default) → API → web. Variáveis novas (opcionais): `ADMIN_RATE_LIMIT_PER_MINUTE`, `SUBSCRIPTION_EXPIRY_JOB_MINUTES` (API) e `NEXT_PUBLIC_CLARITAS_SUPPORT_EMAIL` (web).
+
 ## Publicar a autenticação (uma vez)
 
 1. **Neon:** criar um branch de segurança do banco atual (backup instantâneo).

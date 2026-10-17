@@ -12,6 +12,8 @@ import { useQuotes } from "@/lib/market/use-quotes";
 import { useSelection } from "@/lib/market/use-selection";
 import { useSparkline } from "@/lib/market/use-sparkline";
 import { signOut, useCurrentUser } from "@/lib/auth/use-session";
+import { useFeature } from "@/lib/auth/use-access";
+import { AccessBanner } from "@/components/commercial/AccessBanner";
 import { Clock } from "./Clock";
 
 const NAV: { href: string; icon: IconName; label: string }[] = [
@@ -83,16 +85,14 @@ function Account() {
   );
 }
 
-export function TopBar() {
+/** Busca, cotações e status do feed: só com `terminal.access` (sem acesso, nem chama a API de mercado). */
+function MarketHeader() {
   const { assets } = useFeaturedAssets();
   const macroSymbols = React.useMemo(() => assets.slice(0, 3).map((a) => a.symbol), [assets]);
   const { quotes, status } = useQuotes(macroSymbols);
   const ind = feedIndicator(status);
   return (
-    <header className="flex h-15 shrink-0 items-center gap-7 border-b border-line-subtle pl-5 pr-4">
-      <Link href="/" className="hover:no-underline" aria-label="Claritas Terminal — início">
-        <Wordmark size={22} product="Terminal" />
-      </Link>
+    <>
       <SearchBox />
       <div className="flex-1" />
       <div className="hidden gap-7 xl:flex">
@@ -106,21 +106,46 @@ export function TopBar() {
       <Tooltip content="Dados públicos de mercado da Binance Spot via API Claritas" placement="bottom">
         <span className="cl-label hidden whitespace-nowrap lg:inline">Binance Spot</span>
       </Tooltip>
+    </>
+  );
+}
+
+export function TopBar() {
+  const terminal = useFeature("terminal.access");
+  return (
+    <header className="flex h-15 shrink-0 items-center gap-7 border-b border-line-subtle pl-5 pr-4">
+      <Link href="/" className="hover:no-underline" aria-label="Claritas Terminal — início">
+        <Wordmark size={22} product="Terminal" />
+      </Link>
+      {terminal?.allowed ? <MarketHeader /> : <div className="flex-1" />}
       <Account />
     </header>
   );
+}
+
+/** Destinos que não são telas de mercado: conta (todos) e administração (só ADMIN — a API também exige). */
+function useAccountNav() {
+  const user = useCurrentUser();
+  return [
+    { href: "/conta", icon: "user" as IconName, label: "Minha conta" },
+    ...(user?.role === "ADMIN" ? [{ href: "/admin", icon: "shield-check" as IconName, label: "Administração" }] : []),
+  ];
 }
 
 export function Rail() {
   const pathname = usePathname();
   const router = useRouter();
   const { hrefWith } = useSelection();
+  const extra = useAccountNav();
   return (
     <nav aria-label="Telas" className="hidden w-14 shrink-0 flex-col items-center gap-1.5 border-r border-line-subtle py-3 md:flex">
       {NAV.map((n) => (
         <IconButton key={n.href} icon={n.icon} label={n.label} active={pathname === n.href} onClick={() => router.push(hrefWith(n.href))} />
       ))}
       <div className="flex-1" />
+      {extra.map((n) => (
+        <IconButton key={n.href} icon={n.icon} label={n.label} active={pathname === n.href || pathname.startsWith(`${n.href}/`)} onClick={() => router.push(n.href)} />
+      ))}
       <IconButton icon="layers" label="Design system" onClick={() => router.push("/design-system")} />
     </nav>
   );
@@ -130,6 +155,7 @@ export function Rail() {
 export function MobileNav() {
   const pathname = usePathname();
   const { hrefWith } = useSelection();
+  const extra = useAccountNav();
   return (
     <nav aria-label="Telas" className="flex shrink-0 justify-around border-t border-line-subtle bg-app py-1.5 md:hidden">
       {NAV.map((n) => (
@@ -137,11 +163,22 @@ export function MobileNav() {
           {n.label.split(" ")[0]}
         </Link>
       ))}
+      {extra.map((n) => (
+        <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-1 px-3 py-1 text-xs hover:no-underline ${pathname.startsWith(n.href) ? "text-accent" : "text-fg-tertiary"}`}>
+          {n.href === "/conta" ? "Conta" : "Admin"}
+        </Link>
+      ))}
     </nav>
   );
 }
 
 export function Tape() {
+  const terminal = useFeature("terminal.access");
+  if (!terminal?.allowed) return <div className="h-7.5 shrink-0 border-t border-line-subtle" />;
+  return <MarketTape />;
+}
+
+function MarketTape() {
   const { assets } = useFeaturedAssets();
   const symbols = React.useMemo(() => assets.map((a) => a.symbol), [assets]);
   const { quotes } = useQuotes(symbols);
@@ -159,6 +196,7 @@ export function TerminalShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-app text-fg">
       <TopBar />
+      <AccessBanner />
       <div className="flex min-h-0 flex-1">
         <Rail />
         <main className="flex min-h-0 min-w-0 flex-1 gap-2 overflow-auto p-2.5">{children}</main>

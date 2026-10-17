@@ -27,8 +27,6 @@ const COPY: Record<Step, { eyebrow: string; title: string; body: string; submit:
 const NOT_YET = {
   forgot: "Recuperação de senha ainda não está disponível nesta versão (exige envio de e-mail).",
   sso: "SSO corporativo ainda não está disponível nesta versão.",
-  privacy: "A política de privacidade ainda não foi publicada.",
-  support: "O canal de suporte ainda não foi publicado.",
 };
 
 function StepHeader({ eyebrow, title, body }: { eyebrow: string; title: string; body: string }) {
@@ -164,8 +162,8 @@ export function LoginScreen() {
         <footer className="flex flex-wrap items-center justify-between gap-3 text-xs text-fg-tertiary">
           <span>Conexão criptografada · Binance Spot em tempo real</span>
           <span className="flex gap-4">
-            <TextLink onClick={() => info(NOT_YET.privacy)}>Privacidade</TextLink>
-            <TextLink onClick={() => info(NOT_YET.support)}>Suporte</TextLink>
+            <TextLink href="/planos">Planos</TextLink>
+            <TextLink href="/ajuda#suporte">Ajuda</TextLink>
           </span>
         </footer>
       </main>

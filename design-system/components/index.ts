@@ -3,10 +3,12 @@
 
 // core
 export { Badge, type BadgeProps, type BadgeTone } from "./core/Badge";
+export { DataTable, type DataTableProps, type DataTableColumn } from "./core/DataTable";
 export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./core/Button";
 export { Icon, ICON_NAMES, type IconProps, type IconName } from "./core/Icon";
 export { IconButton, type IconButtonProps } from "./core/IconButton";
 export { Panel, type PanelProps } from "./core/Panel";
+export { StatTile, type StatTileProps } from "./core/StatTile";
 export { Tooltip, type TooltipProps } from "./core/Tooltip";
 export { Wordmark, type WordmarkProps } from "./core/Wordmark";
 // forms
@@ -20,6 +22,7 @@ export { SegmentedControl, type SegmentedControlProps, type SegmentOption } from
 export { Tabs, type TabsProps, type TabItem } from "./navigation/Tabs";
 export { TextLink, type TextLinkProps } from "./navigation/TextLink";
 // feedback
+export { AccessNotice, type AccessNoticeProps } from "./feedback/AccessNotice";
 export { Dialog, type DialogProps } from "./feedback/Dialog";
 export { LiveIndicator, type LiveIndicatorProps, type LiveStatus } from "./feedback/LiveIndicator";
 export { Toast, type ToastProps, type ToastTone } from "./feedback/Toast";

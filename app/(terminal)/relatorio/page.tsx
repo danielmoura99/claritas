@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { FeatureGate } from "@/components/commercial/FeatureGate";
 import { ReportScreen } from "@/components/terminal/ReportScreen";
 
 export const metadata: Metadata = { title: "Resumo do período · Claritas Terminal" };
@@ -7,7 +8,9 @@ export const metadata: Metadata = { title: "Resumo do período · Claritas Termi
 export default function ReportPage() {
   return (
     <Suspense>
-      <ReportScreen />
+      <FeatureGate feature="reports.access">
+        <ReportScreen />
+      </FeatureGate>
     </Suspense>
   );
 }

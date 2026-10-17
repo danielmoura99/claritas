@@ -14,6 +14,7 @@ import { useSearchParams } from "next/navigation";
 import { AnalysisRail, eventTone } from "./AnalysisRail";
 import { LiveDesk } from "./LiveDesk";
 import { Widgets } from "./Widgets";
+import { Onboarding, useFirstChartSignal } from "@/components/commercial/Onboarding";
 
 /** Pregão ao Vivo: gráfico real + leitura determinística + widgets com métricas reais. */
 export function LiveDeskScreen() {
@@ -44,6 +45,8 @@ export function LiveDeskScreen() {
   }, [live.candles]);
   const { analysis, loading, error } = useAnalysis(symbol, interval, live.seriesKey === `${symbol}:${interval}` ? lastClosed : null);
 
+  useFirstChartSignal(live.candles.length > 0);
+
   const lastPrice = live.candles.length ? toChartNumber(live.candles[live.candles.length - 1]!.close) : undefined;
   const decimals = displayDecimals(lastPrice, asset?.pricePrecision);
 
@@ -65,12 +68,15 @@ export function LiveDeskScreen() {
   }, [analysis, showAnalysis, firstBar]);
 
   return (
-    <LiveDesk
+    <>
+      <LiveDesk
       live={live}
       overlays={overlays}
       footerExtra={<Switch size="sm" checked={showAnalysis} onChange={setShowAnalysis} label={<span className="font-mono text-xs uppercase tracking-wider text-fg-tertiary">Análise no gráfico</span>} />}
       rail={<AnalysisRail analysis={analysis} loading={loading} error={error} decimals={decimals} unit={asset?.quoteAsset} />}
       widgets={<Widgets quote={quote} candles={live.candles} analysis={analysis} decimals={decimals} unit={asset?.quoteAsset} interval={interval} />}
-    />
+      />
+      <Onboarding />
+    </>
   );
 }

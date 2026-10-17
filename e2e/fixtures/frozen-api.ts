@@ -7,7 +7,9 @@ import { parseEnv } from "../../services/api/src/config/env";
 import { Database } from "../../services/api/src/infrastructure/db";
 import type { CandleRequest, MarketDataProvider, MarketStreamSource } from "../../services/api/src/providers/market-data-provider";
 import { SESSION_COOKIE } from "../../services/api/src/modules/auth/session-cookie";
-import { SESSION_HEADERS, TEST_SESSION_TOKEN, testSessions, allowAllAccess } from "../../services/api/test/helpers/auth";
+import { SESSION_HEADERS, TEST_SESSION_TOKEN, TEST_USER, allowAllAccess } from "../../services/api/test/helpers/auth";
+import type { AccessPolicy } from "../../services/api/src/modules/entitlements/entitlements-service";
+import type { AuthUser } from "@claritas/contracts";
 
 /** Relógio congelado de todos os testes visuais: 2026-10-09 15:00 (Brasília). */
 export const FROZEN_NOW = Date.UTC(2026, 9, 9, 18, 0, 0);
@@ -88,12 +90,27 @@ class SilentStream implements MarketStreamSource {
  * `wsStatus` controla o status enviado ao assinar (ex.: "live", "offline").
  * `signedIn` (padrão true): o navegador tem o cookie da sessão de TESTE e a API o aceita; false = visitante.
  */
-export async function useFrozenApi(page: Page, opts: { wsStatus?: "live" | "offline" | "stale"; provider?: FrozenProvider; signedIn?: boolean } = {}) {
+export async function useFrozenApi(
+  page: Page,
+  opts: {
+    wsStatus?: "live" | "offline" | "stale";
+    provider?: FrozenProvider;
+    signedIn?: boolean;
+    /** Política de acesso da sessão de teste (padrão: tudo liberado). */
+    access?: AccessPolicy;
+    /** Usuário da sessão de teste (ex.: `{ role: "ADMIN" }`). */
+    user?: Partial<AuthUser>;
+    /** Respostas fixas por caminho (`GET /api/v1/admin/summary` → `data`), para telas que dependem do banco. */
+    fixtures?: Record<string, unknown>;
+  } = {},
+) {
   const signedIn = opts.signedIn ?? true;
+  const user: AuthUser = { ...TEST_USER, ...opts.user };
+  const sessions = { verify: async (t: string) => (t === TEST_SESSION_TOKEN ? { user, expiresAt: new Date(FROZEN_NOW + 3_600_000) } : null) };
   const realNow = Date.now;
   Date.now = () => FROZEN_NOW; // relógio do lado da API (só neste processo de teste)
   const provider = opts.provider ?? new FrozenProvider();
-  const app = await buildApp({ env: parseEnv({ LOG_LEVEL: "silent" }), logger: false, provider, streamSource: new SilentStream(), database: new Database(undefined), sessions: testSessions, access: allowAllAccess });
+  const app = await buildApp({ env: parseEnv({ LOG_LEVEL: "silent" }), logger: false, provider, streamSource: new SilentStream(), database: new Database(undefined), sessions, access: opts.access ?? allowAllAccess });
   await page.clock.setFixedTime(FROZEN_NOW);
   // O proxy do Next só deixa entrar nas telas com o cookie de sessão presente.
   if (signedIn) await page.context().addCookies([{ name: SESSION_COOKIE, value: TEST_SESSION_TOKEN, url: "http://localhost:3000" }]);
@@ -101,6 +118,8 @@ export async function useFrozenApi(page: Page, opts: { wsStatus?: "live" | "offl
   await page.route("**/api/v1/**", async (route) => {
     const req = route.request();
     const url = new URL(req.url());
+    const fixture = opts.fixtures?.[`${req.method()} ${url.pathname}`];
+    if (fixture !== undefined) return route.fulfill({ status: 200, body: JSON.stringify({ data: fixture }), headers: { "content-type": "application/json" } });
     const body = req.postData() ?? undefined;
     // Como o navegador: content-type só quando há corpo (POST vazio com JSON declarado é 400 no Fastify).
     const headers = { ...(body ? { "content-type": "application/json" } : {}), ...(signedIn ? SESSION_HEADERS : {}) };

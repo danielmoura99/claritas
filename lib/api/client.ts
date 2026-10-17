@@ -38,6 +38,8 @@ export class ApiClientError extends Error {
     message: string,
     readonly status?: number,
     readonly retryAfterSec?: number,
+    /** Detalhes estáveis do erro (ex.: `{ feature, reason }` em ENTITLEMENT_REQUIRED). */
+    readonly details?: unknown,
   ) {
     super(message);
     this.name = "ApiClientError";
@@ -45,6 +47,11 @@ export class ApiClientError extends Error {
 }
 
 let onUnauthenticated: (() => void) | null = null;
+let onAccessDenied: (() => void) | null = null;
+/** Quem reage quando a API nega por acesso comercial/conta (o estado de acesso é recalculado). */
+export function setAccessDeniedHandler(fn: (() => void) | null) {
+  onAccessDenied = fn;
+}
 /** Quem decide o que fazer quando a sessão acaba no meio do uso (o portão de auth redireciona para /entrar). */
 export function setUnauthenticatedHandler(fn: (() => void) | null) {
   onUnauthenticated = fn;
@@ -54,11 +61,12 @@ function failure(res: Response, body: unknown): ApiClientError {
   const parsed = ApiErrorSchema.safeParse(body);
   if (!parsed.success) return new ApiClientError("INTERNAL", `API respondeu ${res.status}`, res.status);
   if (parsed.data.error.code === "UNAUTHENTICATED") onUnauthenticated?.();
-  return new ApiClientError(parsed.data.error.code, parsed.data.error.message, res.status, parsed.data.error.retryAfterSec);
+  if (["ENTITLEMENT_REQUIRED", "ACCOUNT_BLOCKED", "QUOTA_EXCEEDED"].includes(parsed.data.error.code)) onAccessDenied?.();
+  return new ApiClientError(parsed.data.error.code, parsed.data.error.message, res.status, parsed.data.error.retryAfterSec, parsed.data.error.details);
 }
 
 /** POST/PUT/DELETE tipado com o mesmo tratamento de erro do GET. */
-export async function apiSend<T extends z.ZodType>(method: "POST" | "PUT" | "DELETE", path: string, schema: T, body?: unknown): Promise<z.infer<T>> {
+export async function apiSend<T extends z.ZodType>(method: "POST" | "PUT" | "PATCH" | "DELETE", path: string, schema: T, body?: unknown): Promise<z.infer<T>> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, { method, headers: body === undefined ? { accept: "application/json" } : { accept: "application/json", "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -147,6 +155,14 @@ export function describeError(err: unknown): string {
         return err.message;
       case "UNAUTHENTICATED":
         return "Sessão encerrada — entre novamente.";
+      case "ACCOUNT_BLOCKED":
+        return "Conta sem acesso no momento. Fale com o suporte.";
+      case "ENTITLEMENT_REQUIRED":
+        return "Recurso não incluído no seu acesso atual.";
+      case "QUOTA_EXCEEDED":
+        return err.message;
+      case "FORBIDDEN":
+        return "Acesso restrito à administração.";
       case "DB_UNAVAILABLE":
         return "Contas indisponíveis no momento — o banco de dados não respondeu.";
       case "PROVIDER_RATE_LIMITED":

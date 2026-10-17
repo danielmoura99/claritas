@@ -3,10 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  Badge, Button, Icon, ICON_NAMES, IconButton, Panel, Tooltip, Wordmark,
+  Badge, Button, DataTable, Icon, ICON_NAMES, IconButton, Panel, StatTile, Tooltip, Wordmark,
   Checkbox, Input, PasswordInput, Select, Switch,
   SegmentedControl, Tabs, TextLink,
-  Dialog, LiveIndicator, Toast,
+  AccessNotice, Dialog, LiveIndicator, Toast,
   Delta, PriceTicker, TickerTape, WatchRow,
   CandleChart, DistributionCurve, FlowArea, ProbabilityField, Sparkline,
   ConfidenceMeter, MetricRow, SentimentGauge, SignalCard,
@@ -146,7 +146,7 @@ function CoreSection() {
   const [iconQuery, setIconQuery] = React.useState("");
   const icons = ICON_NAMES.filter(n => n.includes(iconQuery.toLowerCase()));
   return (
-    <Section id="core" title="Core" count="7 componentes">
+    <Section id="core" title="Core" count="9 componentes">
       <Spec name="Button" file="core/Button.tsx">
         {variants.map(v => (
           <Row key={v} label={v}>
@@ -197,6 +197,25 @@ function CoreSection() {
           <Badge size="sm">sm</Badge>
         </Row>
       </Spec>
+      <div className="grid gap-2 lg:grid-cols-2">
+        <Spec name="DataTable" file="core/DataTable.tsx">
+          <DataTable caption="Exemplo" rowKey={r => r.id} onRowClick={() => undefined} rowLabel={r => `Abrir ${r.email}`}
+            rows={[{ id: "1", email: "ana@exemplo.com", plano: "Pro", criado: "17/10/2026" }, { id: "2", email: "bruno@exemplo.com", plano: "—", criado: "16/10/2026" }]}
+            columns={[
+              { key: "email", header: "E-mail", render: r => r.email, width: "50%" },
+              { key: "plano", header: "Plano", render: r => r.plano },
+              { key: "criado", header: "Cadastro", render: r => r.criado, mono: true, align: "right" },
+            ]} />
+          <DataTable caption="Vazio" rowKey={(r: { id: string }) => r.id} rows={[]} columns={[{ key: "x", header: "Coluna", render: () => null }]} empty="Nenhum registro com estes filtros." />
+        </Spec>
+        <Spec name="StatTile" file="core/StatTile.tsx">
+          <div className="grid grid-cols-3 gap-2">
+            <StatTile label="Usuários" value="128" hint="total cadastrado" />
+            <StatTile label="Com acesso" value="42" tone="sand" />
+            <StatTile label="Receita" value={null} hint="pendente" />
+          </div>
+        </Spec>
+      </div>
       <div className="grid gap-2 lg:grid-cols-2">
         <Spec name="Panel" file="core/Panel.tsx">
           <div className="grid grid-cols-2 gap-2">
@@ -314,10 +333,19 @@ function FeedbackSection() {
   const statuses: LiveStatus[] = ["live", "analyzing", "pre", "auction", "closed", "delayed"];
   const tones: ToastTone[] = ["sand", "up", "down", "info", "warn"];
   return (
-    <Section id="feedback" title="Feedback" count="3 componentes">
+    <Section id="feedback" title="Feedback" count="4 componentes">
       <Spec name="LiveIndicator" file="feedback/LiveIndicator.tsx">
         <Row label="md">{statuses.map(s => <LiveIndicator key={s} status={s} />)}</Row>
         <Row label="sm + detail">{statuses.slice(0, 3).map(s => <LiveIndicator key={s} status={s} size="sm" detail="14:32:07" />)}</Row>
+      </Spec>
+      <Spec name="AccessNotice" file="feedback/AccessNotice.tsx">
+        <div className="grid gap-2 lg:grid-cols-3">
+          <AccessNotice eyebrow="Scanner" title="O Scanner não está incluído no seu acesso atual." actions={<><Button variant="primary" size="sm">Ver planos</Button><Button variant="ghost" size="sm">Minha conta</Button></>}>
+            Seu acesso inclui o Pregão ao vivo. Fale com o suporte para ampliar.
+          </AccessNotice>
+          <AccessNotice tone="warn" eyebrow="Teste" title="Seu teste termina em 2 dias." />
+          <AccessNotice tone="info" eyebrow="Pagamentos" title="Integração adiada." >Acessos são concedidos manualmente nesta fase.</AccessNotice>
+        </div>
       </Spec>
       <div className="grid gap-2 lg:grid-cols-2">
         <Spec name="Toast" file="feedback/Toast.tsx">
@@ -566,7 +594,7 @@ export function Showcase() {
         <div className="flex flex-col gap-3">
           <span className="cl-label">Fonte da verdade: DESIGN.md · biblioteca: design-system/</span>
           <h1 className="font-serif text-5xl text-fg">A biblioteca inteira, <i className="text-accent">em todos os estados.</i></h1>
-          <p className="max-w-3xl text-fg-secondary">32 componentes em 7 grupos, tokens, template do terminal e os dois temas. Areia é a voz da análise: se a Claritas não gerou, não é areia.</p>
+          <p className="max-w-3xl text-fg-secondary">35 componentes em 7 grupos, tokens, template do terminal e os dois temas. Areia é a voz da análise: se a Claritas não gerou, não é areia.</p>
         </div>
         <Foundations />
         <CoreSection />

@@ -4,6 +4,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 Terminal de análise gráfica com **dados reais da Binance Spot** (REST histórico + WebSocket ao vivo), no visual do design system Claritas. Três telas: **Pregão ao vivo** (`/`), **Scanner** (`/scanner`) e **Resumo do período** (`/relatorio`), atrás de **login obrigatório** (`/entrar`: entrar ou criar conta; watchlist e preferências por usuário — ADR-018).
 
+**Camada comercial (Plano 02):** papéis `USER`/`ADMIN`, acesso por funcionalidade (deny-by-default, aplicado na API e no WebSocket), planos versionados, assinaturas **manuais** (teste, acesso manual, cortesia) com prazo, concessões individuais, quotas, auditoria append-only e painel `/admin`. Área do assinante em `/conta`, páginas públicas `/planos` e `/ajuda`. **Pagamentos (gateway próprio, Etapa 7) adiados** — nada é cobrado pelo Claritas. Ver `docs/SAAS_*.md`.
+
 **Arquitetura:** Next.js 16 na raiz (frontend) → **API Claritas** independente (Node 24 + Fastify 5, `services/api`) → Binance Spot pública. Contratos Zod compartilhados em `packages/contracts`. Persistência (contas, sessões, watchlist, preferências) em PostgreSQL (Neon) via Prisma 7. O navegador só fala com a API Claritas: o REST pela própria origem do frontend (`/api/v1/*` repassado pelo Next, cookie de sessão first-party) e o WebSocket direto, com ticket de sessão.
 
 ### Como executar
@@ -17,6 +19,8 @@ npm run dev                 # web (localhost:3000) + API (localhost:4000) juntos
 ```
 
 Abra `http://localhost:3000`: sem sessão, a tela de entrada pede login ou a criação de uma conta.
+
+> **Primeiro admin e acesso:** com deny-by-default, uma conta nova não vê o terminal até receber acesso. Promova uma conta já cadastrada com `npm run admin:role -- promote --email <e-mail> --confirm <e-mail> --reason "<motivo>"` e conceda acesso em `/admin` (passo a passo em `docs/SAAS_RUNBOOK.md`).
 
 > Para testar o login sem tocar no Neon: `npm run db:local:start` e `node scripts/e2e-db.mjs --api` (API apontando para o banco local `claritas_e2e`) com `npm run dev:web` em outro terminal.
 
