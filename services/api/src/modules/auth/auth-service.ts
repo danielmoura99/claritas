@@ -1,4 +1,4 @@
-import { SHORT_SESSION_HOURS, type AuthUser, type LoginRequest, type RegisterRequest } from "@claritas/contracts";
+import { LEGAL_VERSIONS, SHORT_SESSION_HOURS, type AuthUser, type LoginRequest, type RegisterRequest } from "@claritas/contracts";
 import type { Database } from "../../infrastructure/db";
 import { AppError } from "../../infrastructure/errors";
 import { dummyHash, hashPassword, verifyPassword } from "./password";
@@ -39,7 +39,19 @@ export class AuthService implements SessionVerifier {
   async register(input: RegisterRequest): Promise<AuthContext & { token: string }> {
     const passwordHash = await hashPassword(input.password);
     try {
-      const user = await this.db.run((p) => p.user.create({ data: { email: input.email, name: input.name, passwordHash } }));
+      // Conta + registro do aceite (versões vigentes) na mesma transação: sem aceite, sem conta.
+      const user = await this.db.run((p) =>
+        p.$transaction(async (tx) => {
+          const u = await tx.user.create({ data: { email: input.email, name: input.name, passwordHash } });
+          await tx.consentRecord.createMany({
+            data: [
+              { userId: u.id, documentType: "TERMS", documentVersion: LEGAL_VERSIONS.terms, source: "register" },
+              { userId: u.id, documentType: "PRIVACY", documentVersion: LEGAL_VERSIONS.privacy, source: "register" },
+            ],
+          });
+          return u;
+        }),
+      );
       return { ...(await this.openSession(user.id)), user: toUser(user) };
     } catch (err) {
       if ((err as { code?: string }).code === "P2002") throw new AppError("EMAIL_TAKEN", "Já existe uma conta com este e-mail");

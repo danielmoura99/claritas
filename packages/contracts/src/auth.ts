@@ -19,8 +19,20 @@ export const PasswordSchema = z
 
 export const DisplayNameSchema = z.string().trim().min(1, "Informe seu nome").max(80, "Nome longo demais");
 
+/**
+ * Versões vigentes dos documentos legais (data de publicação). Mudou o texto → nova versão; o aceite de cada
+ * conta fica registrado (ConsentRecord) com a versão aceita.
+ */
+export const LEGAL_VERSIONS = { terms: "2026-10-17", privacy: "2026-10-17" } as const;
+
 export const RegisterRequestSchema = z
-  .object({ name: DisplayNameSchema, email: EmailSchema, password: PasswordSchema })
+  .object({
+    name: DisplayNameSchema,
+    email: EmailSchema,
+    password: PasswordSchema,
+    /** Aceite expresso dos Termos de Uso e da Política de Privacidade vigentes (registrado com a versão). */
+    acceptTerms: z.literal(true, { error: "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade" }),
+  })
   .strict()
   .refine((r) => r.password.toLowerCase() !== r.email, { path: ["password"], message: "A senha não pode ser o próprio e-mail" });
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;

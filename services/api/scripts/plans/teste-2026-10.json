@@ -1,0 +1,47 @@
+[
+  {
+    "code": "pro-mensal",
+    "name": "Pro Mensal",
+    "description": "Pregão ao vivo, Scanner e Resumo do período. Cobrança mensal.",
+    "priceMinor": 29900,
+    "currency": "BRL",
+    "billingPeriod": "MONTHLY",
+    "features": [
+      { "key": "terminal.access", "enabled": true, "limit": null },
+      { "key": "scanner.access", "enabled": true, "limit": null },
+      { "key": "scanner.scan", "enabled": true, "limit": 50 },
+      { "key": "reports.access", "enabled": true, "limit": null },
+      { "key": "watchlist.max_assets", "enabled": true, "limit": 50 }
+    ]
+  },
+  {
+    "code": "pro-semestral",
+    "name": "Pro Semestral",
+    "description": "Tudo do Pro, pago a cada 6 meses: 10% de desconto sobre o mensal (equivale a R$ 269/mês).",
+    "priceMinor": 161400,
+    "currency": "BRL",
+    "billingPeriod": "SEMIANNUAL",
+    "features": [
+      { "key": "terminal.access", "enabled": true, "limit": null },
+      { "key": "scanner.access", "enabled": true, "limit": null },
+      { "key": "scanner.scan", "enabled": true, "limit": 50 },
+      { "key": "reports.access", "enabled": true, "limit": null },
+      { "key": "watchlist.max_assets", "enabled": true, "limit": 50 }
+    ]
+  },
+  {
+    "code": "pro-anual",
+    "name": "Pro Anual",
+    "description": "Tudo do Pro, pago uma vez por ano: 20% de desconto sobre o mensal (equivale a R$ 239/mês).",
+    "priceMinor": 287000,
+    "currency": "BRL",
+    "billingPeriod": "YEARLY",
+    "features": [
+      { "key": "terminal.access", "enabled": true, "limit": null },
+      { "key": "scanner.access", "enabled": true, "limit": null },
+      { "key": "scanner.scan", "enabled": true, "limit": 50 },
+      { "key": "reports.access", "enabled": true, "limit": null },
+      { "key": "watchlist.max_assets", "enabled": true, "limit": 50 }
+    ]
+  }
+]

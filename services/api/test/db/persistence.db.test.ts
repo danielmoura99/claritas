@@ -65,14 +65,14 @@ function sessionOf(res: { headers: Record<string, unknown> }) {
 }
 
 async function register(name: string, email: string, password = "senha-forte-123") {
-  const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name, email, password } });
+  const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name, email, password, acceptTerms: true } });
   expect(res.statusCode, res.body).toBe(201);
   return sessionOf(res);
 }
 
 describe("contas e sessões (PostgreSQL real)", () => {
   it("criar conta: 201, cookie HttpOnly/SameSite=Lax e sessão válida", async () => {
-    const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: " Ana ", email: " Ana@Claritas.TEST ", password: "senha-forte-123" } });
+    const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: " Ana ", email: " Ana@Claritas.TEST ", password: "senha-forte-123", acceptTerms: true } });
     expect(res.statusCode).toBe(201);
     expect(res.json().data.user).toMatchObject({ name: "Ana", email: "ana@claritas.test" });
     expect(res.json().data.user.passwordHash).toBeUndefined();
@@ -85,17 +85,37 @@ describe("contas e sessões (PostgreSQL real)", () => {
     expect(me.json().data.user.email).toBe("ana@claritas.test");
   });
 
+  it("aceite dos termos é obrigatório e fica registrado com a versão (LGPD)", async () => {
+    const no = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "Sem aceite", email: "semaceite@claritas.test", password: "senha-forte-123" } });
+    expect(no.statusCode).toBe(400);
+    expect(no.json().error.details[0].path).toBe("acceptTerms");
+    const user = await db.require().user.findUniqueOrThrow({ where: { email: "ana@claritas.test" }, include: { consents: true } });
+    expect(user.consents.map((c) => [c.documentType, c.documentVersion, c.source]).sort()).toEqual([["PRIVACY", "2026-10-17", "register"], ["TERMS", "2026-10-17", "register"]]);
+    expect(await db.require().user.count({ where: { email: "semaceite@claritas.test" } })).toBe(0);
+  });
+
+  it("exportação dos próprios dados (LGPD art. 18) sem hash de senha nem token", async () => {
+    const login = await app.inject({ method: "POST", url: "/api/v1/auth/login", payload: { email: "ana@claritas.test", password: "senha-forte-123" } });
+    const res = await app.inject({ url: "/api/v1/me/export", headers: { cookie: sessionOf(login).cookie } });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-disposition"]).toMatch(/attachment/);
+    const data = res.json().data;
+    expect(data.user.email).toBe("ana@claritas.test");
+    expect(data.consents).toHaveLength(2);
+    expect(res.body).not.toMatch(/scrypt\$|passwordHash|tokenHash/);
+  });
+
   it("e-mail repetido → 409 EMAIL_TAKEN (sem diferenciar maiúsculas)", async () => {
-    const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "Outra", email: "ANA@claritas.test", password: "outra-senha-123" } });
+    const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "Outra", email: "ANA@claritas.test", password: "outra-senha-123", acceptTerms: true } });
     expect(res.statusCode).toBe(409);
     expect(res.json().error.code).toBe("EMAIL_TAKEN");
   });
 
   it("senha fraca ou igual ao e-mail → 400 com o campo", async () => {
-    const short = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "Bia", email: "bia@claritas.test", password: "curta" } });
+    const short = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "Bia", email: "bia@claritas.test", password: "curta", acceptTerms: true } });
     expect(short.statusCode).toBe(400);
     expect(short.json().error.details[0].path).toBe("password");
-    const same = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "Bia", email: "bia@claritas.test", password: "bia@claritas.test" } });
+    const same = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "Bia", email: "bia@claritas.test", password: "bia@claritas.test", acceptTerms: true } });
     expect(same.statusCode).toBe(400);
   });
 

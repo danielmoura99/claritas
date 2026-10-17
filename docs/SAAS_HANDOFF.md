@@ -28,7 +28,7 @@ Login próprio na API (ADR-018), Prisma 7 em `services/api/prisma`, Fastify, Nex
 | `npm run test:integration` (Binance real) | 13/13 |
 | `npx playwright test --project=visual` | 41/41 |
 | `npm run build` | OK (19 rotas) |
-| `npx playwright test --project=live` | **não executado** — porta 4000 ocupada pelo `npm run dev` do responsável, apontando para o Neon |
+| `npx playwright test` (setup + live + visual) | 54/54 — `live` na pilha real com a API no banco local de E2E |
 
 ## 5. Migrações
 

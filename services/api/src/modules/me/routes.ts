@@ -39,6 +39,29 @@ export async function meRoutes(app: FastifyInstance, { access, db, events }: { a
     return { data: { done: Boolean(row?.onboardingDoneAt), at: row?.onboardingDoneAt?.toISOString() ?? null } };
   });
 
+  /**
+   * Portabilidade/acesso (LGPD art. 18, II e V): tudo o que o Claritas guarda sobre a pessoa, em JSON, sem segredos
+   * (nenhum hash de senha nem token de sessão). Limite baixo por ser consulta ampla.
+   */
+  app.get("/export", { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } }, async (req, reply) => {
+    const userId = authOf(req).user.id;
+    const data = await db.run(async (p) => {
+      const [user, settings, watchlist, subscriptions, overrides, consents, sessions, events] = await Promise.all([
+        p.user.findUniqueOrThrow({ where: { id: userId }, select: { id: true, name: true, email: true, role: true, status: true, createdAt: true, updatedAt: true } }),
+        p.userSettings.findUnique({ where: { userId } }),
+        p.watchlist.findUnique({ where: { userId }, include: { items: { select: { baseAsset: true, quoteAsset: true, position: true, createdAt: true } } } }),
+        p.subscription.findMany({ where: { userId }, select: { status: true, source: true, startsAt: true, accessUntil: true, endedAt: true, endReason: true, createdAt: true, plan: { select: { code: true, name: true, version: true } } } }),
+        p.featureOverride.findMany({ where: { userId }, select: { featureKey: true, effect: true, limitValue: true, startsAt: true, endsAt: true, revokedAt: true, createdAt: true } }),
+        p.consentRecord.findMany({ where: { userId }, select: { documentType: true, documentVersion: true, acceptedAt: true, source: true } }),
+        p.session.findMany({ where: { userId }, select: { createdAt: true, expiresAt: true, lastUsedAt: true } }),
+        p.productEvent.findMany({ where: { userId }, select: { name: true, occurredAt: true } }),
+      ]);
+      return { exportedAt: new Date().toISOString(), user, settings, watchlist, subscriptions, overrides, consents, sessions, productEvents: events };
+    });
+    reply.header("content-disposition", `attachment; filename="claritas-meus-dados.json"`);
+    return { data };
+  });
+
   /** Lista fechada de eventos de produto do cliente (D-S16); o resto é registrado no servidor. */
   app.post("/events", { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } }, async (req, reply) => {
     const ev = parseOrThrow(ClientProductEventSchema, req.body ?? {});

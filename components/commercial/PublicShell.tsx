@@ -26,7 +26,11 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       </header>
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 sm:px-10">{children}</main>
       <footer className="mx-auto w-full max-w-5xl px-4 pb-10 text-xs text-fg-tertiary sm:px-10">
-        Ferramenta de análise gráfica com dados públicos da Binance Spot. Não é recomendação de investimento nem executa ordens.
+        <span className="flex flex-wrap gap-x-4 gap-y-1">
+          <span>Ferramenta de análise gráfica com dados públicos da Binance Spot. Não é recomendação de investimento nem executa ordens.</span>
+          <Link href="/termos" className="text-fg-secondary hover:text-fg">Termos de Uso</Link>
+          <Link href="/privacidade" className="text-fg-secondary hover:text-fg">Privacidade</Link>
+        </span>
       </footer>
     </div>
   );

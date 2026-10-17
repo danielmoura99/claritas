@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LoginRequestSchema, PASSWORD_MIN, RegisterRequestSchema } from "@claritas/contracts";
+import Link from "next/link";
 import { Button, Checkbox, Icon, Input, PasswordInput, TextLink, Wordmark } from "@/design-system";
 import { ApiClientError, describeError } from "@/lib/api/client";
 import { safeNext, signIn, signUp, useSession } from "@/lib/auth/use-session";
@@ -14,7 +15,7 @@ import { LoginMarketShowcase } from "./LoginMarketShowcase";
 // backend: ao clicar, a tela diz isso (nada é simulado). "Criar conta" (cadastro aberto, ADR-018) é um passo.
 
 type Step = "entrar" | "criar";
-type Field = "name" | "email" | "password";
+type Field = "name" | "email" | "password" | "acceptTerms";
 type FieldErrors = Partial<Record<Field, string>>;
 type Notice = { tone: "error" | "info"; text: string };
 
@@ -54,7 +55,7 @@ function fieldErrorsOf(issues: { path: PropertyKey[]; message: string }[]): Fiel
   const out: FieldErrors = {};
   for (const i of issues) {
     const k = i.path[0];
-    if ((k === "name" || k === "email" || k === "password") && !out[k]) out[k] = i.message;
+    if ((k === "name" || k === "email" || k === "password" || k === "acceptTerms") && !out[k]) out[k] = i.message;
   }
   return out;
 }
@@ -69,6 +70,7 @@ export function LoginScreen() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [remember, setRemember] = React.useState(true);
+  const [acceptTerms, setAcceptTerms] = React.useState(false);
   const [errors, setErrors] = React.useState<FieldErrors>({});
   const [notice, setNotice] = React.useState<Notice | null>(null);
   const [pending, setPending] = React.useState(false);
@@ -90,7 +92,7 @@ export function LoginScreen() {
     e.preventDefault();
     setNotice(null);
     // Mesmos contratos Zod da API: o erro aparece no campo antes de qualquer requisição.
-    const parsed = step === "criar" ? RegisterRequestSchema.safeParse({ name, email, password }) : LoginRequestSchema.safeParse({ email, password, remember });
+    const parsed = step === "criar" ? RegisterRequestSchema.safeParse({ name, email, password, acceptTerms }) : LoginRequestSchema.safeParse({ email, password, remember });
     if (!parsed.success) {
       setErrors(fieldErrorsOf(parsed.error.issues));
       return;
@@ -98,7 +100,7 @@ export function LoginScreen() {
     setErrors({});
     setPending(true);
     try {
-      if (step === "criar") await signUp(RegisterRequestSchema.parse({ name, email, password }));
+      if (step === "criar") await signUp(RegisterRequestSchema.parse({ name, email, password, acceptTerms }));
       else await signIn(LoginRequestSchema.parse({ email, password, remember }));
       router.replace(next);
     } catch (err) {
@@ -136,6 +138,13 @@ export function LoginScreen() {
                     <TextLink onClick={() => info(NOT_YET.forgot)}>Esqueci a senha</TextLink>
                   </div>
                 )}
+                {step === "criar" && (
+                  <div className="flex flex-col gap-1.5">
+                    <Checkbox checked={acceptTerms} onChange={setAcceptTerms} disabled={pending}
+                      label={<span>Li e aceito os <Link href="/termos" target="_blank" className="text-accent">Termos de Uso</Link> e a <Link href="/privacidade" target="_blank" className="text-accent">Política de Privacidade</Link></span>} />
+                    {errors.acceptTerms && <span role="alert" className="text-xs text-down-text">{errors.acceptTerms}</span>}
+                  </div>
+                )}
                 {notice && <FormNotice notice={notice} />}
               </div>
               <div className="flex flex-col gap-2.5">
@@ -163,6 +172,8 @@ export function LoginScreen() {
           <span>Conexão criptografada · Binance Spot em tempo real</span>
           <span className="flex gap-4">
             <TextLink href="/planos">Planos</TextLink>
+            <TextLink href="/termos">Termos</TextLink>
+            <TextLink href="/privacidade">Privacidade</TextLink>
             <TextLink href="/ajuda#suporte">Ajuda</TextLink>
           </span>
         </footer>

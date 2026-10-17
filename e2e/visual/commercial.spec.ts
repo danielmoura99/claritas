@@ -174,3 +174,19 @@ test.describe("assinante e público", () => {
     await api.close();
   });
 });
+
+test.describe("documentos legais", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  for (const [slug, title] of [["termos", "Termos de Uso"], ["privacidade", "Política de Privacidade"]] as const) {
+    test(`${slug} é público, versionado e marcado como preliminar`, async ({ page }) => {
+      const api = await useFrozenApi(page, { signedIn: false });
+      await page.goto(`/${slug}`);
+      await expect(page.getByRole("heading", { name: title })).toBeVisible();
+      await expect(page.getByText("Versão preliminar")).toBeVisible();
+      await settle(page);
+      await expect(page).toHaveScreenshot(`${slug}-1440.png`);
+      await api.close();
+    });
+  }
+});

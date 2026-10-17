@@ -183,7 +183,7 @@ export const PlanUpsertSchema = z
     description: z.string().trim().max(400).default(""),
     priceMinor: z.number().int().min(0).nullable().optional(),
     currency: z.string().regex(/^[A-Z]{3}$/).nullable().optional(),
-    billingPeriod: z.enum(["MONTHLY", "QUARTERLY", "YEARLY"]).nullable().optional(),
+    billingPeriod: z.enum(["MONTHLY", "QUARTERLY", "SEMIANNUAL", "YEARLY"]).nullable().optional(),
     features: z.array(PlanFeatureDtoSchema).max(50),
   })
   .strict();

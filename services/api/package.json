@@ -10,7 +10,8 @@
     "build": "tsc --noEmit -p .",
     "typecheck": "tsc --noEmit -p .",
     "postinstall": "prisma generate",
-    "admin:role": "tsx scripts/admin-role.ts"
+    "admin:role": "tsx scripts/admin-role.ts",
+    "admin:ops": "tsx scripts/admin-ops.ts"
   },
   "dependencies": {
     "@claritas/contracts": "0.1.0",

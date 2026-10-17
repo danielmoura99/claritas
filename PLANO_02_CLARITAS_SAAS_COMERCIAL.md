@@ -994,7 +994,7 @@ O fato de o gateway próprio já operar em outros produtos **não comprova autom
 | 7 — Gateway próprio | **ADIADA — AGUARDANDO INTEGRAÇÃO FUTURA** (decisão do responsável, 17/10) | só estrutura (`GatewayCustomerLink`, `GatewayEvent`, campos externos e origem `OWN_GATEWAY` reservados); `/admin/integracoes` e API respondem `DEFERRED` | auditar o contrato do gateway (§9.2) quando liberado |
 | 8 — Onboarding | **CONCLUÍDA (partes independentes do gateway)** (17/10) | onboarding de 3 passos retomável/dispensável (`/me/onboarding`), estados de acesso (sem liberação, teste perto do fim/encerrado, conta bloqueada, limite), `/ajuda` (FAQ + suporte configurável) | e-mails transacionais (D-07); estados de pagamento (Etapa 7) |
 | 9 — Métricas | **CONCLUÍDA (sem receita)** (17/10) | `ProductEvent` + `/admin` com fórmulas em `docs/SAAS_METRICS.md`; receita/MRR/conversão marcados PENDENTES | receita após Etapa 7 |
-| 10 — Hardening | **CONCLUÍDA no escopo atual** (17/10) | lint, typecheck, 139 unitários, 36 de banco real, 13 de integração Binance, 41 visuais (Playwright), build; `docs/SAAS_SECURITY.md`, `SAAS_RUNBOOK.md`, `SAAS_ROUTES.md` | Playwright `live` (porta 4000 ocupada por API do responsável ligada ao Neon); testes de webhook (Etapa 7); revisão jurídica |
+| 10 — Hardening | **CONCLUÍDA no escopo atual** (17/10) | lint, typecheck, 139 unitários, 38 de banco real, 13 de integração Binance, Playwright 54/54 (setup + 10 live na pilha real + 43 visuais), build; `docs/SAAS_SECURITY.md`, `SAAS_RUNBOOK.md`, `SAAS_ROUTES.md`; revisão de Termos/LGPD/fiscal em `docs/LEGAL_REVIEW.md` com aceite registrado e exportação de dados | testes de webhook (Etapa 7); validação por advogado/contador |
 
 #### Execução [2026-10-17 UTC] — Etapas 0 a 3 e 5 (backend)
 - Estado: Etapa 0 CONCLUÍDA; Etapas 1, 2, 3 e 5 CONCLUÍDAS no backend; 4, 8 e 9 EM PROGRESSO; 7 ADIADA.
@@ -1017,6 +1017,12 @@ O fato de o gateway próprio já operar em outros produtos **não comprova autom
 - Pendências ou limitações: Playwright `live` não executado (porta 4000 ocupada por `npm run dev` do responsável apontando para o Neon, que ainda não tem as migrações); recuperação de senha/MFA (D-07); termos/LGPD/licença Binance (D-08/D-09); Etapa 7.
 - Próxima ação exata: com autorização — migrar Neon, promover o 1º admin e conceder acessos (runbook); rodar `npm run test:e2e` com a API local de E2E; depois auditar o contrato do gateway (Etapa 7).
 - Commit: branch `feat/saas-comercial` (ver `git log`), sem push.
+
+#### Execução [2026-10-17 UTC] — Planos de teste, revisão legal e publicação
+- Estado: concluídas as pendências executáveis; Etapa 7 segue ADIADA.
+- Novo: `ConsentRecord` (migração `20261017120000_consent`) + aceite obrigatório no cadastro; `/termos` e `/privacidade` (versão preliminar 2026-10-17); `GET /api/v1/me/export` + "Baixar meus dados"; período `SEMIANNUAL`; CLI `npm run admin:ops` (grant/plans) com auditoria; catálogo de teste `services/api/scripts/plans/teste-2026-10.json` (Pro Mensal R$ 299, Semestral R$ 1.614, Anual R$ 2.870); `docs/LEGAL_REVIEW.md`.
+- Testes: lint OK · typecheck OK · `npm test` 139/139 · `npm run test:db` 38/38 · Playwright 54/54 (incluindo `live` na pilha real com a API no banco local de E2E) · build OK.
+- Produção: ver registro de publicação logo abaixo.
 
 ### Modelo obrigatório de atualização após cada etapa
 
@@ -1090,10 +1096,10 @@ Sempre criar/atualizar `docs/SAAS_HANDOFF.md` incluindo:
 ### Qualidade e handoff
 
 - [x] Lint, typecheck e build passam.
-- [~] Testes unitários, API/integração, E2E e autorização/quotas pertinentes passam — **exceto** Playwright `live` (não executado: porta ocupada por API ligada ao Neon) e webhooks (Etapa 7).
+- [x] Testes unitários, API/integração, E2E (live + visual) e autorização/quotas pertinentes passam — webhooks pendentes da Etapa 7.
 - [x] Migrações testadas sem destruir contas reais. (aditivas, aplicadas do zero em banco local; Neon não alterado)
 - [x] Runbook, README, audit, decisões, status, handoff e evidências atualizados.
-- [ ] Questões jurídicas/fiscais/licença de dados — **sinalizadas como bloqueio para lançamento comercial** (D-08, D-09).
+- [~] Questões jurídicas/fiscais revisadas e implementadas no produto (`docs/LEGAL_REVIEW.md`), **pendentes de validação por advogado/contador**; licença de dados (D-09) adiada pelo responsável — bloqueio para lançamento comercial.
 
 ### Definição de conclusão
 

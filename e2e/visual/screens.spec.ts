@@ -89,9 +89,10 @@ test.describe("acesso (dados congelados)", () => {
     await expect(page.getByText("Informe seu nome")).toBeVisible();
     await expect(page.getByText("E-mail inválido")).toBeVisible();
     await expect(page.getByText("A senha precisa de ao menos 8 caracteres")).toBeVisible();
+    await expect(page.getByText("Para criar a conta, aceite os Termos de Uso e a Política de Privacidade")).toBeVisible();
     expect(calls).toEqual([]);
     await settle(page);
-    await expect(page).toHaveScreenshot("entrar-criar-erros-1440.png", { mask: masks(page) });
+    await expect(page).toHaveScreenshot("entrar-criar-erros-1440.png", { mask: [...masks(page), showcaseChart(page)] });
     await api.close();
   });
 

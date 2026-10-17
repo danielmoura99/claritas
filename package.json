@@ -21,7 +21,8 @@
     "db:migrate": "npm exec -w @claritas/api -- prisma migrate deploy",
     "db:seed": "npm exec -w @claritas/api -- prisma db seed",
     "db:generate": "npm exec -w @claritas/api -- prisma generate",
-    "admin:role": "npm run admin:role -w @claritas/api --"
+    "admin:role": "npm run admin:role -w @claritas/api --",
+    "admin:ops": "npm run admin:ops -w @claritas/api --"
   },
   "dependencies": {
     "lightweight-charts": "^5.2.1",

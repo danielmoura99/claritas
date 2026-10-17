@@ -11,6 +11,14 @@ import { UpgradeActions } from "./FeatureGate";
  * Minha conta (Plano 02 §8.1 / Etapa 6): o que a pessoa tem, até quando e por quê — somente leitura.
  * Cortesia e acesso manual aparecem como tais (nunca como pagamento); não há checkout (Etapa 7 adiada).
  */
+/** Download do JSON de exportação (arquivo da API, não navegação de página). */
+function downloadMyData() {
+  const a = document.createElement("a");
+  a.href = "/api/v1/me/export";
+  a.download = "claritas-meus-dados.json";
+  a.click();
+}
+
 export function AccountScreen() {
   const user = useCurrentUser();
   const access = useAccess();
@@ -76,8 +84,8 @@ export function AccountScreen() {
             Para encerrar antes ou mudar de plano, fale com o suporte.
           </p>
         </Panel>
-        <Panel eyebrow="Segurança" title="Sessão" footer={<div className="flex flex-wrap gap-2"><Button size="sm" variant="secondary" icon="log-out" onClick={() => void signOut()}>Sair deste navegador</Button>{SUPPORT_EMAIL && <Button size="sm" variant="ghost" onClick={() => (window.location.href = `mailto:${SUPPORT_EMAIL}`)}>Falar com o suporte</Button>}</div>}>
-          <p className="m-0 text-sm text-fg-secondary">Troca de senha e recuperação por e-mail ainda não estão disponíveis (dependem de um serviço de e-mail). Se precisar, fale com o suporte.</p>
+        <Panel eyebrow="Segurança e privacidade" title="Sessão e seus dados" footer={<div className="flex flex-wrap gap-2"><Button size="sm" variant="secondary" icon="log-out" onClick={() => void signOut()}>Sair deste navegador</Button><Button size="sm" variant="ghost" icon="download" onClick={downloadMyData}>Baixar meus dados</Button>{SUPPORT_EMAIL && <Button size="sm" variant="ghost" onClick={() => (window.location.href = `mailto:${SUPPORT_EMAIL}`)}>Falar com o suporte</Button>}</div>}>
+          <p className="m-0 text-sm text-fg-secondary">Troca de senha e recuperação por e-mail ainda não estão disponíveis (dependem de um serviço de e-mail). &quot;Baixar meus dados&quot; gera um arquivo com tudo o que guardamos sobre você (LGPD, art. 18). Exclusão da conta: peça ao suporte. Veja a Política de Privacidade.</p>
         </Panel>
       </div>
     </div>

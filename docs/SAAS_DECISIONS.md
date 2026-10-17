@@ -9,6 +9,9 @@ Formato: decisão → justificativa → data. Decisões comerciais pendentes do 
 | R-01 | **Etapa 7 (gateway próprio) ADIADA — aguardando integração futura.** Nada de checkout, pagamento, webhook financeiro, gateway alternativo ou pagamento fictício. Só a estrutura de dados para a integração futura. | 17/10/2026 |
 | R-02 | Sistema funciona com assinaturas manuais, períodos de teste e concessões administrativas até a integração. | 17/10/2026 |
 | R-03 | Promover usuário a ADMIN, publicar a aplicação e alterar serviços externos exigem autorização explícita (fora do escopo autônomo). | 17/10/2026 |
+| R-04 | Autorizado: migrar o Neon, promover a conta "Daniel Moura" a ADMIN, conceder-lhe acesso e publicar (deploy). | 17/10/2026 |
+| R-05 | Planos de **teste**: Pro Mensal R$ 299, Pro Semestral e Pro Anual. Valores de semestral (R$ 1.614, −10%) e anual (R$ 2.870, −20%) definidos pelo agente a partir do mensal; mesmas funcionalidades do Pro. | 17/10/2026 |
+| R-06 | Revisar Termos, LGPD e fiscal agora (`docs/LEGAL_REVIEW.md`); licença dos dados da Binance fica para depois (a fonte vai mudar). | 17/10/2026 |
 
 ## Decisões técnicas (agente, baixo risco)
 

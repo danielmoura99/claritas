@@ -8,7 +8,7 @@ import { describeError } from "@/lib/api/client";
 import { plansApi } from "@/lib/api/commercial";
 import { FEATURE_LABEL, SUPPORT_EMAIL, fmtInt } from "@/lib/auth/access-copy";
 
-const PERIOD: Record<string, string> = { MONTHLY: "mês", QUARTERLY: "trimestre", YEARLY: "ano" };
+const PERIOD: Record<string, string> = { MONTHLY: "mês", QUARTERLY: "trimestre", SEMIANNUAL: "semestre", YEARLY: "ano" };
 
 /**
  * Página de planos (Plano 02 §8.2 / Etapa 6). Mostra SÓ versões publicadas e funcionalidades que existem.

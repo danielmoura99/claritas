@@ -50,7 +50,7 @@ afterAll(async () => {
 // ─── helpers ───
 const api = (cookie: string | null, opts: InjectOptions) => app.inject({ ...opts, headers: { ...(cookie ? { cookie } : {}), ...opts.headers } });
 async function signup(name: string, email: string) {
-  const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name, email, password: "senha-forte-123" } });
+  const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name, email, password: "senha-forte-123", acceptTerms: true } });
   expect(res.statusCode, res.body).toBe(201);
   const m = String(res.headers["set-cookie"]).match(new RegExp(`${SESSION_COOKIE}=([^;]+)`))!;
   return { cookie: `${SESSION_COOKIE}=${m[1]}`, id: res.json().data.user.id as string };

@@ -93,7 +93,7 @@ describe("matriz de acesso (Plano 02 §12)", () => {
   });
 
   it("cadastro não aceita role no corpo (escalonamento rejeitado)", async () => {
-    const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "X", email: "x@claritas.test", password: "uma-senha-longa", role: "ADMIN" } });
+    const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "X", email: "x@claritas.test", password: "uma-senha-longa", acceptTerms: true, role: "ADMIN" } });
     expect(res.statusCode).toBe(400);
   });
 

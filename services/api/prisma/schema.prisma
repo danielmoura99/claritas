@@ -45,6 +45,7 @@ model User {
   subscriptions Subscription[]
   featureOverrides FeatureOverride[]
   usageCounters UsageCounter[]
+  consents     ConsentRecord[]
 
   @@index([role])
   @@index([status])
@@ -355,4 +356,20 @@ model GatewayEvent {
 
   @@unique([gatewayKey, externalEventId])
   @@index([status, receivedAt])
+}
+
+/// Aceite de documentos legais (LGPD art. 8º §1º / prova do aceite): versão aceita, quando e por onde.
+/// Append-only na prática: novo aceite = nova linha.
+model ConsentRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  /// TERMS | PRIVACY
+  documentType    String
+  documentVersion String
+  acceptedAt      DateTime @default(now())
+  /// Ex.: "register" (cadastro), "reaccept" (nova versão).
+  source          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, documentType])
 }

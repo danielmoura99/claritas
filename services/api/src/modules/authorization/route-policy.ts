@@ -41,6 +41,7 @@ export const ROUTE_POLICIES: Record<string, RoutePolicy> = {
   "GET /api/v1/me/onboarding": SESSION,
   "PUT /api/v1/me/onboarding": SESSION,
   "POST /api/v1/me/events": SESSION,
+  "GET /api/v1/me/export": SESSION,
 
   "GET /api/v1/market/assets": feature("terminal.access"),
   "GET /api/v1/market/assets/:symbol": feature("terminal.access"),

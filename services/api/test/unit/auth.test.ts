@@ -81,11 +81,13 @@ describe("tentativas de login por e-mail", () => {
 
 describe("contratos de auth", () => {
   it("normaliza e-mail e valida senha", () => {
-    expect(RegisterRequestSchema.parse({ name: " Ana ", email: " ANA@Claritas.test ", password: "12345678" })).toEqual({ name: "Ana", email: "ana@claritas.test", password: "12345678" });
-    expect(RegisterRequestSchema.safeParse({ name: "Ana", email: "ana@claritas.test", password: "1234567" }).success).toBe(false);
-    expect(RegisterRequestSchema.safeParse({ name: "", email: "ana@claritas.test", password: "12345678" }).success).toBe(false);
-    expect(RegisterRequestSchema.safeParse({ name: "Ana", email: "não-é-email", password: "12345678" }).success).toBe(false);
-    expect(RegisterRequestSchema.safeParse({ name: "Ana", email: "a@b.test", password: "12345678", admin: true }).success).toBe(false);
+    expect(RegisterRequestSchema.parse({ name: " Ana ", email: " ANA@Claritas.test ", password: "12345678", acceptTerms: true })).toEqual({ name: "Ana", email: "ana@claritas.test", password: "12345678", acceptTerms: true });
+    expect(RegisterRequestSchema.safeParse({ name: "Ana", email: "ana@claritas.test", password: "12345678" }).success).toBe(false);
+    expect(RegisterRequestSchema.safeParse({ name: "Ana", email: "ana@claritas.test", password: "12345678", acceptTerms: false }).success).toBe(false);
+    expect(RegisterRequestSchema.safeParse({ name: "Ana", email: "ana@claritas.test", password: "1234567", acceptTerms: true }).success).toBe(false);
+    expect(RegisterRequestSchema.safeParse({ name: "", email: "ana@claritas.test", password: "12345678", acceptTerms: true }).success).toBe(false);
+    expect(RegisterRequestSchema.safeParse({ name: "Ana", email: "não-é-email", password: "12345678", acceptTerms: true }).success).toBe(false);
+    expect(RegisterRequestSchema.safeParse({ name: "Ana", email: "a@b.test", password: "12345678", acceptTerms: true, admin: true }).success).toBe(false);
     // Contas antigas com senha curta continuam entrando: a política vale para o cadastro.
     expect(LoginRequestSchema.safeParse({ email: "a@b.test", password: "x" }).success).toBe(true);
   });
@@ -156,7 +158,7 @@ describe("limites das rotas de senha", () => {
 
   it("sem banco, entrar e criar conta respondem 503 explícito", async () => {
     const app = await buildApp({ env: parseEnv({}), logger: false, streamSource: new FakeStreamSource() });
-    const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "Ana", email: "ana@claritas.test", password: "senha-forte-123" } });
+    const res = await app.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "Ana", email: "ana@claritas.test", password: "senha-forte-123", acceptTerms: true } });
     expect(res.statusCode).toBe(503);
     expect(res.json().error.code).toBe("DB_UNAVAILABLE");
     await app.close();
