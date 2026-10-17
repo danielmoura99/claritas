@@ -19,6 +19,9 @@ const eslintConfig = defineConfig([
     "design-system/reference/**",
     // Prisma Client gerado (prisma generate).
     "services/api/src/generated/**",
+    // Relatórios e artefatos do Playwright (gerados).
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 

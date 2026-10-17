@@ -5,4 +5,5 @@ export * from "./analysis";
 export * from "./scanner";
 export * from "./report";
 export * from "./persistence";
+export * from "./auth";
 export { z } from "zod";

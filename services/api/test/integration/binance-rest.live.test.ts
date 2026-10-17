@@ -3,16 +3,18 @@ import type { FastifyInstance } from "fastify";
 import { INTERVAL_MS, type Candle } from "@claritas/contracts";
 import { buildApp } from "../../src/app";
 import { parseEnv } from "../../src/config/env";
+import { authedInject, testSessions } from "../helpers/auth";
 
 // Integração REAL com a Binance Spot pública (rede necessária). Nenhuma fixture aqui.
 let app: FastifyInstance;
 beforeAll(async () => {
-  app = await buildApp({ env: parseEnv({ LOG_LEVEL: "silent" }), logger: false });
+  app = await buildApp({ env: parseEnv({ LOG_LEVEL: "silent" }), logger: false, sessions: testSessions });
 });
 afterAll(() => app.close());
+const inject = authedInject(() => app);
 
 const getCandles = async (qs: string) => {
-  const res = await app.inject(`/api/v1/market/candles?${qs}`);
+  const res = await inject(`/api/v1/market/candles?${qs}`);
   expect(res.statusCode, res.body).toBe(200);
   return res.json() as { data: Candle[]; source: string };
 };
@@ -54,15 +56,15 @@ describe("Binance Spot REST real", () => {
   });
 
   it("metadados Spot de BTCUSDT e erro controlado para símbolo inexistente", async () => {
-    const asset = await app.inject("/api/v1/market/assets/BTCUSDT");
+    const asset = await inject("/api/v1/market/assets/BTCUSDT");
     expect(asset.json().data).toMatchObject({ id: "BINANCE_SPOT:BTCUSDT", baseAsset: "BTC", quoteAsset: "USDT", status: "TRADING" });
-    const bad = await app.inject("/api/v1/market/candles?symbol=ZZZZNOTREALUSDT&interval=5m");
+    const bad = await inject("/api/v1/market/candles?symbol=ZZZZNOTREALUSDT&interval=5m");
     expect(bad.statusCode).toBe(404);
     expect(bad.json().error.code).toBe("SYMBOL_NOT_FOUND");
   });
 
   it("cotação 24h real com janela explícita", async () => {
-    const res = await app.inject("/api/v1/market/quote?symbol=BTCUSDT");
+    const res = await inject("/api/v1/market/quote?symbol=BTCUSDT");
     const q = res.json().data;
     expect(q.window).toBe("rolling_24h");
     expect(Number(q.lastPrice)).toBeGreaterThan(0);
@@ -72,7 +74,7 @@ describe("Binance Spot REST real", () => {
 
 describe("Análise sobre dados reais", () => {
   it("BTCUSDT/5m: indicadores com método, base só de barras fechadas, sem probabilidade", async () => {
-    const res = await app.inject("/api/v1/analysis?symbol=BTCUSDT&interval=5m");
+    const res = await inject("/api/v1/analysis?symbol=BTCUSDT&interval=5m");
     expect(res.statusCode, res.body).toBe(200);
     const a = res.json().data;
     expect(a.basis.includesOpenCandle).toBe(false);
@@ -89,7 +91,7 @@ describe("Análise sobre dados reais", () => {
   });
 
   it("troca de timeframe muda a base da análise", async () => {
-    const h1 = (await app.inject("/api/v1/analysis?symbol=ETHUSDT&interval=1h")).json().data;
+    const h1 = (await inject("/api/v1/analysis?symbol=ETHUSDT&interval=1h")).json().data;
     expect(h1.interval).toBe("1h");
     expect(h1.basis.lastOpenTimeMs % 3_600_000).toBe(0);
   });
@@ -98,7 +100,7 @@ describe("Análise sobre dados reais", () => {
 describe("Scanner sobre dados reais", () => {
   it("top 10 USDT por volume 24h real, ordenado, com métricas; segunda chamada sai do cache", async () => {
     const t0 = Date.now();
-    const res = await app.inject("/api/v1/scanner?size=10&timeframe=15m");
+    const res = await inject("/api/v1/scanner?size=10&timeframe=15m");
     expect(res.statusCode, res.body).toBe(200);
     const d = res.json().data;
     expect(d.universe).toMatchObject({ quote: "USDT", rankedBy: "quoteVolume24h" });
@@ -112,14 +114,14 @@ describe("Scanner sobre dados reais", () => {
     }
     const first = Date.now() - t0;
     const t1 = Date.now();
-    await app.inject("/api/v1/scanner?size=10&timeframe=15m");
+    await inject("/api/v1/scanner?size=10&timeframe=15m");
     expect(Date.now() - t1).toBeLessThan(Math.max(50, first / 4));
   });
 });
 
 describe("Resumo do período sobre dados reais", () => {
   it("24h móveis: OHLCV coerente com os candles da janela e janela explícita", async () => {
-    const res = await app.inject("/api/v1/report?symbol=BTCUSDT");
+    const res = await inject("/api/v1/report?symbol=BTCUSDT");
     expect(res.statusCode, res.body).toBe(200);
     const r = res.json().data;
     expect(r.window).toMatchObject({ kind: "rolling_24h", partial: true });
@@ -135,7 +137,7 @@ describe("Resumo do período sobre dados reais", () => {
 
   it("dia anterior em Brasília: janela fechada de 96 barras de 15m", async () => {
     const d = new Date(Date.now() - 2 * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-    const r = (await app.inject(`/api/v1/report?symbol=ETHUSDT&window=day&date=${d}`)).json().data;
+    const r = (await inject(`/api/v1/report?symbol=ETHUSDT&window=day&date=${d}`)).json().data;
     expect(r.window.partial).toBe(false);
     expect(r.bars).toBe(96);
     expect(r.movers).toBeNull();

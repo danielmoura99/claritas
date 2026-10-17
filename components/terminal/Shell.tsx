@@ -11,6 +11,7 @@ import { useFeaturedAssets } from "@/lib/market/use-assets";
 import { useQuotes } from "@/lib/market/use-quotes";
 import { useSelection } from "@/lib/market/use-selection";
 import { useSparkline } from "@/lib/market/use-sparkline";
+import { signOut, useCurrentUser } from "@/lib/auth/use-session";
 import { Clock } from "./Clock";
 
 const NAV: { href: string; icon: IconName; label: string }[] = [
@@ -66,6 +67,22 @@ function SearchBox() {
   );
 }
 
+/** Conta da sessão: nome (e-mail no tooltip) e saída. */
+function Account() {
+  const user = useCurrentUser();
+  const [leaving, setLeaving] = React.useState(false);
+  if (!user) return null;
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="hidden h-6.5 w-px bg-line lg:block" />
+      <Tooltip content={user.email} placement="bottom">
+        <span className="hidden max-w-40 truncate pl-2.5 text-xs text-fg-secondary lg:inline">{user.name}</span>
+      </Tooltip>
+      <IconButton icon="log-out" label="Sair" size="sm" disabled={leaving} onClick={() => { setLeaving(true); void signOut(); }} />
+    </div>
+  );
+}
+
 export function TopBar() {
   const { assets } = useFeaturedAssets();
   const macroSymbols = React.useMemo(() => assets.slice(0, 3).map((a) => a.symbol), [assets]);
@@ -89,6 +106,7 @@ export function TopBar() {
       <Tooltip content="Dados públicos de mercado da Binance Spot via API Claritas" placement="bottom">
         <span className="cl-label hidden whitespace-nowrap lg:inline">Binance Spot</span>
       </Tooltip>
+      <Account />
     </header>
   );
 }

@@ -9,6 +9,8 @@ import {
   WatchlistSchema,
   ReportSchema,
   ScannerResultSchema,
+  SessionSchema,
+  StreamTicketSchema,
   marketEnvelope,
   type Analysis,
   type Candle,
@@ -22,6 +24,10 @@ import {
   type Watchlist,
   type Report,
   type ScannerResult,
+  type LoginRequest,
+  type RegisterRequest,
+  type Session,
+  type StreamTicket,
 } from "@claritas/contracts";
 import { API_URL } from "./config";
 
@@ -38,8 +44,21 @@ export class ApiClientError extends Error {
   }
 }
 
-/** PUT/DELETE tipado com o mesmo tratamento de erro do GET. */
-export async function apiSend<T extends z.ZodType>(method: "PUT" | "DELETE", path: string, schema: T, body?: unknown): Promise<z.infer<T>> {
+let onUnauthenticated: (() => void) | null = null;
+/** Quem decide o que fazer quando a sessão acaba no meio do uso (o portão de auth redireciona para /entrar). */
+export function setUnauthenticatedHandler(fn: (() => void) | null) {
+  onUnauthenticated = fn;
+}
+
+function failure(res: Response, body: unknown): ApiClientError {
+  const parsed = ApiErrorSchema.safeParse(body);
+  if (!parsed.success) return new ApiClientError("INTERNAL", `API respondeu ${res.status}`, res.status);
+  if (parsed.data.error.code === "UNAUTHENTICATED") onUnauthenticated?.();
+  return new ApiClientError(parsed.data.error.code, parsed.data.error.message, res.status, parsed.data.error.retryAfterSec);
+}
+
+/** POST/PUT/DELETE tipado com o mesmo tratamento de erro do GET. */
+export async function apiSend<T extends z.ZodType>(method: "POST" | "PUT" | "DELETE", path: string, schema: T, body?: unknown): Promise<z.infer<T>> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, { method, headers: body === undefined ? { accept: "application/json" } : { accept: "application/json", "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -47,11 +66,7 @@ export async function apiSend<T extends z.ZodType>(method: "PUT" | "DELETE", pat
     throw new ApiClientError("NETWORK", "API Claritas inacessível");
   }
   const json: unknown = await res.json().catch(() => undefined);
-  if (!res.ok) {
-    const parsed = ApiErrorSchema.safeParse(json);
-    if (parsed.success) throw new ApiClientError(parsed.data.error.code, parsed.data.error.message, res.status);
-    throw new ApiClientError("INTERNAL", `API respondeu ${res.status}`, res.status);
-  }
+  if (!res.ok) throw failure(res, json);
   const parsed = schema.safeParse(json);
   if (!parsed.success) throw new ApiClientError("PROVIDER_BAD_RESPONSE", "Resposta da API fora do contrato", res.status);
   return parsed.data;
@@ -67,11 +82,7 @@ export async function apiGet<T extends z.ZodType>(path: string, schema: T, init?
     throw new ApiClientError("NETWORK", "API Claritas inacessível");
   }
   const body: unknown = await res.json().catch(() => undefined);
-  if (!res.ok) {
-    const parsed = ApiErrorSchema.safeParse(body);
-    if (parsed.success) throw new ApiClientError(parsed.data.error.code, parsed.data.error.message, res.status, parsed.data.error.retryAfterSec);
-    throw new ApiClientError("INTERNAL", `API respondeu ${res.status}`, res.status);
-  }
+  if (!res.ok) throw failure(res, body);
   const parsed = schema.safeParse(body);
   if (!parsed.success) throw new ApiClientError("PROVIDER_BAD_RESPONSE", "Resposta da API fora do contrato", res.status);
   return parsed.data;
@@ -114,8 +125,16 @@ export const persistenceApi = {
   watchlist: (signal?: AbortSignal): Promise<Watchlist> => apiGet("/api/v1/watchlist", dataOf(WatchlistSchema), { signal }).then((r) => r.data),
   add: (symbol: string): Promise<Watchlist> => apiSend("PUT", `/api/v1/watchlist/items/${encodeURIComponent(symbol)}`, dataOf(WatchlistSchema)).then((r) => r.data),
   remove: (symbol: string): Promise<Watchlist> => apiSend("DELETE", `/api/v1/watchlist/items/${encodeURIComponent(symbol)}`, dataOf(WatchlistSchema)).then((r) => r.data),
-  getPreferences: (clientId: string, signal?: AbortSignal): Promise<Preference | null> => apiGet(`/api/v1/preferences/${clientId}`, dataOf(PreferenceSchema.nullable()), { signal }).then((r) => r.data),
-  putPreferences: (clientId: string, patch: PreferenceUpdate): Promise<Preference> => apiSend("PUT", `/api/v1/preferences/${clientId}`, dataOf(PreferenceSchema), patch).then((r) => r.data),
+  getPreferences: (signal?: AbortSignal): Promise<Preference | null> => apiGet("/api/v1/preferences", dataOf(PreferenceSchema.nullable()), { signal }).then((r) => r.data),
+  putPreferences: (patch: PreferenceUpdate): Promise<Preference> => apiSend("PUT", "/api/v1/preferences", dataOf(PreferenceSchema), patch).then((r) => r.data),
+};
+
+export const authApi = {
+  session: (signal?: AbortSignal): Promise<Session> => apiGet("/api/v1/auth/session", dataOf(SessionSchema), { signal }).then((r) => r.data),
+  login: (input: LoginRequest): Promise<Session> => apiSend("POST", "/api/v1/auth/login", dataOf(SessionSchema), input).then((r) => r.data),
+  register: (input: RegisterRequest): Promise<Session> => apiSend("POST", "/api/v1/auth/register", dataOf(SessionSchema), input).then((r) => r.data),
+  logout: (): Promise<null> => apiSend("POST", "/api/v1/auth/logout", dataOf(z.null())).then((r) => r.data),
+  streamTicket: (): Promise<StreamTicket> => apiSend("POST", "/api/v1/auth/stream-ticket", dataOf(StreamTicketSchema)).then((r) => r.data),
 };
 
 /** Mensagem curta, no tom Claritas, para cada erro. */
@@ -126,6 +145,10 @@ export function describeError(err: unknown): string {
         return "API Claritas inacessível — verifique se o serviço está em execução.";
       case "SYMBOL_NOT_FOUND":
         return err.message;
+      case "UNAUTHENTICATED":
+        return "Sessão encerrada — entre novamente.";
+      case "DB_UNAVAILABLE":
+        return "Contas indisponíveis no momento — o banco de dados não respondeu.";
       case "PROVIDER_RATE_LIMITED":
         return `Limite de requisições da Binance — nova tentativa em ${err.retryAfterSec ?? 60}s.`;
       case "PROVIDER_TIMEOUT":

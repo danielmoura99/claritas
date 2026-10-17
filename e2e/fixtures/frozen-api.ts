@@ -6,6 +6,8 @@ import { buildApp } from "../../services/api/src/app";
 import { parseEnv } from "../../services/api/src/config/env";
 import { Database } from "../../services/api/src/infrastructure/db";
 import type { CandleRequest, MarketDataProvider, MarketStreamSource } from "../../services/api/src/providers/market-data-provider";
+import { SESSION_COOKIE } from "../../services/api/src/modules/auth/session-cookie";
+import { SESSION_HEADERS, TEST_SESSION_TOKEN, testSessions } from "../../services/api/test/helpers/auth";
 
 /** Relógio congelado de todos os testes visuais: 2026-10-09 15:00 (Brasília). */
 export const FROZEN_NOW = Date.UTC(2026, 9, 9, 18, 0, 0);
@@ -84,18 +86,26 @@ class SilentStream implements MarketStreamSource {
 /**
  * Liga a página à API Claritas em processo (provedor congelado) e simula o WebSocket.
  * `wsStatus` controla o status enviado ao assinar (ex.: "live", "offline").
+ * `signedIn` (padrão true): o navegador tem o cookie da sessão de TESTE e a API o aceita; false = visitante.
  */
-export async function useFrozenApi(page: Page, opts: { wsStatus?: "live" | "offline" | "stale"; provider?: FrozenProvider } = {}) {
+export async function useFrozenApi(page: Page, opts: { wsStatus?: "live" | "offline" | "stale"; provider?: FrozenProvider; signedIn?: boolean } = {}) {
+  const signedIn = opts.signedIn ?? true;
   const realNow = Date.now;
   Date.now = () => FROZEN_NOW; // relógio do lado da API (só neste processo de teste)
   const provider = opts.provider ?? new FrozenProvider();
-  const app = await buildApp({ env: parseEnv({ LOG_LEVEL: "silent" }), logger: false, provider, streamSource: new SilentStream(), database: new Database(undefined) });
+  const app = await buildApp({ env: parseEnv({ LOG_LEVEL: "silent" }), logger: false, provider, streamSource: new SilentStream(), database: new Database(undefined), sessions: testSessions });
   await page.clock.setFixedTime(FROZEN_NOW);
-  await page.route("http://localhost:4000/**", async (route) => {
+  // O proxy do Next só deixa entrar nas telas com o cookie de sessão presente.
+  if (signedIn) await page.context().addCookies([{ name: SESSION_COOKIE, value: TEST_SESSION_TOKEN, url: "http://localhost:3000" }]);
+  // REST vai à mesma origem (/api/v1, repassado pelo Next à API): interceptamos antes do repasse.
+  await page.route("**/api/v1/**", async (route) => {
     const req = route.request();
     const url = new URL(req.url());
-    const res = await app.inject({ method: req.method() as "GET", url: url.pathname + url.search, payload: req.postData() ?? undefined, headers: { "content-type": "application/json" } });
-    await route.fulfill({ status: res.statusCode, body: res.body, headers: { "content-type": "application/json", "access-control-allow-origin": "*" } });
+    const body = req.postData() ?? undefined;
+    // Como o navegador: content-type só quando há corpo (POST vazio com JSON declarado é 400 no Fastify).
+    const headers = { ...(body ? { "content-type": "application/json" } : {}), ...(signedIn ? SESSION_HEADERS : {}) };
+    const res = await app.inject({ method: req.method() as "GET", url: url.pathname + url.search, payload: body, headers });
+    await route.fulfill({ status: res.statusCode, body: res.body, headers: { "content-type": "application/json" } });
   });
   await page.routeWebSocket(/:4000\/api\/v1\/market\/stream/, (ws: WebSocketRoute) => {
     ws.send(JSON.stringify({ type: "hello", serverTime: new Date(FROZEN_NOW).toISOString(), protocol: 1 }));

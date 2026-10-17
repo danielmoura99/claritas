@@ -1,11 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { ClientIdSchema, PreferenceUpdateSchema, SymbolSchema } from "@claritas/contracts";
+import { PreferenceUpdateSchema, SymbolSchema } from "@claritas/contracts";
 import { AppError } from "../../infrastructure/errors";
 import { parseOrThrow } from "../../infrastructure/validation";
+import { authOf } from "../auth/routes";
 import type { MarketService } from "../market/market-service";
 import type { PreferenceRepository, WatchlistRepository } from "./repositories";
 
+/** Watchlist e preferências do usuário da sessão (o guarda de auth já validou a sessão). */
 export async function persistenceRoutes(
   app: FastifyInstance,
   { watchlist, preferences, market }: { watchlist: WatchlistRepository; preferences: PreferenceRepository; market: MarketService },
@@ -23,30 +25,29 @@ export async function persistenceRoutes(
     return { baseAsset: a.baseAsset, quoteAsset: a.quoteAsset };
   }
 
-  app.get("/watchlist", async () => ({ data: await watchlist.get() }));
+  app.get("/watchlist", async (req) => ({ data: await watchlist.get(authOf(req).user.id) }));
 
   app.put("/watchlist/items/:symbol", async (req) => {
+    const userId = authOf(req).user.id;
     const { symbol } = parseOrThrow(SymbolParams, req.params);
     const i = await instrumentOf(symbol, true); // só ativos negociando entram
-    return { data: await watchlist.add(i.baseAsset, i.quoteAsset) };
+    return { data: await watchlist.add(userId, i.baseAsset, i.quoteAsset) };
   });
 
   app.delete("/watchlist/items/:symbol", async (req) => {
+    const userId = authOf(req).user.id;
     const { symbol } = parseOrThrow(SymbolParams, req.params);
     const i = await instrumentOf(symbol, false); // remover funciona mesmo se o ativo deixou de negociar
-    return { data: await watchlist.remove(i.baseAsset, i.quoteAsset) };
+    return { data: await watchlist.remove(userId, i.baseAsset, i.quoteAsset) };
   });
 
-  app.get("/preferences/:clientId", async (req) => {
-    const { clientId } = parseOrThrow(z.object({ clientId: ClientIdSchema }), req.params);
-    // Cliente sem preferências ainda é um estado normal (data: null), não um erro.
-    return { data: await preferences.get(clientId) };
-  });
+  // Usuário sem preferências ainda é um estado normal (data: null), não um erro.
+  app.get("/preferences", async (req) => ({ data: await preferences.get(authOf(req).user.id) }));
 
-  app.put("/preferences/:clientId", async (req) => {
-    const { clientId } = parseOrThrow(z.object({ clientId: ClientIdSchema }), req.params);
+  app.put("/preferences", async (req) => {
+    const userId = authOf(req).user.id;
     const patch = parseOrThrow(PreferenceUpdateSchema, req.body ?? {});
     if (patch.symbol) await market.resolveAsset(patch.symbol);
-    return { data: await preferences.upsert(clientId, patch) };
+    return { data: await preferences.upsert(userId, patch) };
   });
 }

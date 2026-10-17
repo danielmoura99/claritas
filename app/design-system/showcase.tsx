@@ -4,8 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import {
   Badge, Button, Icon, ICON_NAMES, IconButton, Panel, Tooltip, Wordmark,
-  Checkbox, Input, Select, Switch,
-  SegmentedControl, Tabs,
+  Checkbox, Input, PasswordInput, Select, Switch,
+  SegmentedControl, Tabs, TextLink,
   Dialog, LiveIndicator, Toast,
   Delta, PriceTicker, TickerTape, WatchRow,
   CandleChart, DistributionCurve, FlowArea, ProbabilityField, Sparkline,
@@ -240,7 +240,7 @@ function CoreSection() {
 function FormsSection() {
   const [checked, setChecked] = React.useState(true);
   return (
-    <Section id="forms" title="Forms" count="4 componentes">
+    <Section id="forms" title="Forms" count="5 componentes">
       <div className="grid gap-2 lg:grid-cols-2">
         <Spec name="Input" file="forms/Input.tsx">
           <Input label="Default" placeholder="Buscar ativo" icon="search" kbd="/" />
@@ -249,6 +249,13 @@ function FormsSection() {
           <Input label="Erro" defaultValue="abc" error="Informe um preço válido, ex.: 38,42" />
           <Input label="Desabilitado" placeholder="Indisponível" disabled />
           <div className="flex gap-2"><Input size="sm" placeholder="sm" /><Input size="md" placeholder="md" /><Input size="lg" placeholder="lg" /></div>
+        </Spec>
+        <Spec name="PasswordInput" file="forms/PasswordInput.tsx">
+          <PasswordInput label="Senha" placeholder="Sua senha" autoComplete="off" />
+          <PasswordInput label="Revelada" defaultValue="senha-de-exemplo" defaultVisible autoComplete="off" />
+          <PasswordInput label="Nova senha" hint="Mínimo de 8 caracteres" autoComplete="off" forceFocus />
+          <PasswordInput label="Erro" defaultValue="errada" error="E-mail ou senha incorretos" autoComplete="off" />
+          <PasswordInput label="Desabilitada" placeholder="Indisponível" disabled autoComplete="off" />
         </Spec>
         <div className="flex flex-col gap-2">
           <Spec name="Select" file="forms/Select.tsx">
@@ -281,7 +288,7 @@ function FormsSection() {
 
 function NavigationSection() {
   return (
-    <Section id="navigation" title="Navigation" count="2 componentes">
+    <Section id="navigation" title="Navigation" count="3 componentes">
       <div className="grid gap-2 lg:grid-cols-2">
         <Spec name="SegmentedControl" file="navigation/SegmentedControl.tsx">
           <Row label="md mono"><SegmentedControl options={["1m", "5m", "15m", "1h", "D"]} defaultValue="5m" /></Row>
@@ -291,6 +298,11 @@ function NavigationSection() {
         <Spec name="Tabs" file="navigation/Tabs.tsx">
           <Tabs items={[{ value: "sum", label: "Resumo", icon: "layout-grid" }, { value: "sig", label: "Sinais", count: 12 }, { value: "tech", label: "Técnico" }]} />
           <Tabs size="sm" items={["Resumo", "Sinais", "Técnico"]} defaultValue="Sinais" />
+        </Spec>
+        <Spec name="TextLink" file="navigation/TextLink.tsx">
+          <Row label="botão"><TextLink onClick={() => undefined}>Criar conta</TextLink></Row>
+          <Row label="link"><TextLink href="#navigation">← Voltar para entrar</TextLink></Row>
+          <Row label="desabilitado"><TextLink disabled>Indisponível</TextLink></Row>
         </Spec>
       </div>
     </Section>
@@ -554,7 +566,7 @@ export function Showcase() {
         <div className="flex flex-col gap-3">
           <span className="cl-label">Fonte da verdade: DESIGN.md · biblioteca: design-system/</span>
           <h1 className="font-serif text-5xl text-fg">A biblioteca inteira, <i className="text-accent">em todos os estados.</i></h1>
-          <p className="max-w-3xl text-fg-secondary">29 componentes em 7 grupos, tokens, template do terminal e os dois temas. Areia é a voz da análise: se a Claritas não gerou, não é areia.</p>
+          <p className="max-w-3xl text-fg-secondary">32 componentes em 7 grupos, tokens, template do terminal e os dois temas. Areia é a voz da análise: se a Claritas não gerou, não é areia.</p>
         </div>
         <Foundations />
         <CoreSection />

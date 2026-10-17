@@ -44,6 +44,21 @@ const EnvSchema = z.object({
   SCANNER_UNIVERSE_SIZE: z.coerce.number().int().min(5).max(100).default(30),
   SCANNER_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(4),
   DATABASE_URL: z.string().optional(),
+  /** Duração da sessão de login (absoluta, sem renovação automática). */
+  SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
+  /** Cookie de sessão só em HTTPS. Padrão: ligado em produção. */
+  SESSION_COOKIE_SECURE: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
+  /** Requisições por IP por minuto nas rotas que recebem senha (entrar/criar conta). */
+  AUTH_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(1_000).default(20),
+  /**
+   * Proxies confiáveis à frente da API (repasse do frontend + balanceador do host), para o IP do cliente
+   * vir de X-Forwarded-For: "false" (padrão), "true" ou o número de saltos. Ver docs/DEPLOY.md.
+   */
+  TRUST_PROXY: z
+    .string()
+    .regex(/^(true|false|\d{1,2})$/, "use true, false ou o número de saltos")
+    .transform((v) => (v === "true" ? true : v === "false" ? false : Number(v)))
+    .default(false),
 });
 export type Env = z.infer<typeof EnvSchema>;
 

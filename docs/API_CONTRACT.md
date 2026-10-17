@@ -2,6 +2,8 @@
 
 Base: `http://<host>:4000` (dev). Tipos e schemas Zod canônicos: `packages/contracts/src` (fonte única para API e frontend). O frontend **nunca** recebe campos da Binance (`k.t`, `k.o`…).
 
+O navegador chama o REST na **própria origem do frontend** (`/api/v1/*`), que o Next repassa à API (`next.config.ts → rewrites`, destino `CLARITAS_API_URL`): assim o cookie de sessão é first-party mesmo com web e API em domínios diferentes. O WebSocket vai direto à API, autenticado por ticket (ver §Autenticação).
+
 ## Convenções
 
 - Preços/quantidades: **string decimal** com a precisão do provedor (`"81752.01000000"`). Converter para `number` só na borda visual (`toChartNumber`).
@@ -29,7 +31,12 @@ Base: `http://<host>:4000` (dev). Tipos e schemas Zod canônicos: `packages/cont
 | `PROVIDER_BAD_RESPONSE` | 502 | Provedor respondeu fora do formato esperado |
 | `PROVIDER_UNAVAILABLE` | 503 | Provedor inacessível / 5xx após retentativas |
 | `PROVIDER_RATE_LIMITED` | 503 | 429/418 da Binance ou orçamento de peso esgotado (`retryAfterSec`, header `Retry-After`) |
-| `DB_UNAVAILABLE` | 503 | Banco não configurado/inacessível (rotas de persistência) |
+| `DB_UNAVAILABLE` | 503 | Banco não configurado/inacessível (persistência e verificação de sessão) |
+| `UNAUTHENTICATED` | 401 | Sem sessão, sessão vencida/encerrada, ou ticket de stream inválido |
+| `INVALID_CREDENTIALS` | 401 | Entrar: e-mail inexistente **ou** senha errada (mesma resposta para os dois) |
+| `FORBIDDEN` | 403 | Escrita (`POST/PUT/PATCH/DELETE`) com `Origin` fora de `CORS_ORIGIN` |
+| `EMAIL_TAKEN` | 409 | Criar conta com e-mail já cadastrado |
+| `RATE_LIMITED` | 429 | Limite por IP (geral ou das rotas de senha) ou 10 senhas erradas para o mesmo e-mail em 15 min (`retryAfterSec`) |
 | `PROVIDER_TIMEOUT` | 504 | Tempo esgotado |
 | `INTERNAL` | 500 | Erro inesperado |
 
@@ -50,10 +57,24 @@ Toda resposta traz `x-request-id` (aceita um `x-request-id` válido do cliente p
 | GET | `/api/v1/analysis?symbol=&interval=` | ver §Análise (Etapa 5) |
 | GET | `/api/v1/scanner?...` | ver §Scanner (Etapa 6) |
 | GET | `/api/v1/report?...` | ver §Relatório (Etapa 7) |
-| GET | `/api/v1/watchlist` | `Watchlist` (`default`; itens por base/cotação, símbolo derivado) |
+| GET | `/api/v1/watchlist` | `Watchlist` do usuário da sessão (na 1ª vez, cópia da lista modelo; itens por base/cotação, símbolo derivado) |
 | PUT / DELETE | `/api/v1/watchlist/items/:symbol` | `Watchlist` atualizada (PUT só aceita ativo negociando; idempotente) |
-| GET | `/api/v1/preferences/:clientId` | `Preference` ou `null` (cliente sem preferências) |
-| PUT | `/api/v1/preferences/:clientId` | `Preference` (upsert parcial: `symbol`, `interval`, `showAnalysis`; campos desconhecidos → 400) |
+| GET | `/api/v1/preferences` | `Preference` do usuário ou `null` (ainda sem preferências) |
+| PUT | `/api/v1/preferences` | `Preference` (upsert parcial: `symbol`, `interval`, `showAnalysis`; campos desconhecidos → 400) |
+| POST | `/api/v1/auth/register` | `201` + `Session`; corpo `{ name, email, password }` (e-mail normalizado em minúsculas; senha 8–128) |
+| POST | `/api/v1/auth/login` | `Session`; corpo `{ email, password, remember? }` — `remember: false` ("Manter conectado" desmarcado) = cookie sem `Max-Age` e sessão de 12 h |
+| POST | `/api/v1/auth/logout` | `null`; encerra a sessão no servidor e limpa o cookie (idempotente) |
+| GET | `/api/v1/auth/session` | `Session` atual (`{ user: { id, email, name, createdAt }, expiresAt }`) |
+| POST | `/api/v1/auth/stream-ticket` | `{ ticket, expiresAt }` — uso único, 60 s, para abrir o WebSocket |
+
+## Autenticação (ADR-018)
+
+- **Toda rota em `/api/v1` exige sessão**, exceto `auth/register`, `auth/login` e `auth/logout`. `/health` e `/ready` seguem públicos. Sem sessão → `401 UNAUTHENTICATED`.
+- **Sessão:** cookie `claritas_session` — token opaco de 256 bits, `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` em produção, `Max-Age` = `SESSION_TTL_DAYS` (30 dias, sem renovação automática). O banco guarda só o SHA-256 do token; sair apaga a sessão no servidor.
+- **Senha:** scrypt (`N=2^15, r=8, p=1`, sal de 16 bytes; parâmetros no próprio hash). Política: 8–128 caracteres, sem regras de composição, diferente do e-mail. Entrar com e-mail inexistente custa o mesmo tempo que com senha errada.
+- **Força bruta:** `AUTH_RATE_LIMIT_PER_MINUTE` (20) por IP em entrar/criar conta, somado a 10 senhas erradas por e-mail em 15 min. O limite geral por IP vale também para requisições sem sessão.
+- **CSRF:** `SameSite=Lax` + recusa de escritas com `Origin` fora de `CORS_ORIGIN` (`403 FORBIDDEN`).
+- **WebSocket:** o handshake exige `?ticket=` válido (de `POST /auth/stream-ticket`); sem ticket → `401` antes do upgrade. O cliente pede um ticket novo a cada (re)conexão. Tickets ficam em memória (API em processo único).
 
 `FeedStatus`: `{ symbol, interval?, status, source, lastEventAt: ISO|null, lastReceivedAt: ISO|null, latencyMs: number|null, reason? }`. `latencyMs` = `receivedAt + offsetDeRelógio − eventTime`, com o offset estimado pelo método de Cristian sobre `GET /api/v3/time` (renovado a cada 10 min).
 
@@ -92,6 +113,7 @@ Queda do upstream → `reconnecting` → (reconexão) reconciliação REST das b
 
 ### Limites e proteção
 
+- Ticket de sessão obrigatório no handshake (`401` sem upgrade se ausente, vencido ou já usado).
 - Origem do handshake validada contra `CORS_ORIGIN` (close 1008).
 - Máx. 20 mensagens/s por cliente (close 1008), payload máx. 4 KB por mensagem.
 - Heartbeat: ping do servidor a cada 30 s; sem pong → conexão encerrada e assinaturas liberadas.

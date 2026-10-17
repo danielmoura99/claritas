@@ -26,7 +26,7 @@ test("Pregão: candles reais de BTCUSDT, feed ao vivo e atualização incrementa
   // A unidade é a moeda de cotação real (USDT), não BRL.
   await expect(page.getByText("USDT", { exact: true }).first()).toBeVisible();
   // A API recebeu dados reais de mercado: o último preço do BTC é plausível (> 1.000 USDT).
-  const price = await page.evaluate(async () => (await (await fetch("http://localhost:4000/api/v1/market/quote?symbol=BTCUSDT")).json()).data.lastPrice);
+  const price = await page.evaluate(async () => (await (await fetch("/api/v1/market/quote?symbol=BTCUSDT")).json()).data.lastPrice);
   expect(Number(price)).toBeGreaterThan(1_000);
   expect(errors, errors.join(" | ")).toEqual([]);
 });

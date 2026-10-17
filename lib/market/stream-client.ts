@@ -6,6 +6,8 @@ import {
   type Interval,
   type QuoteUpdateMessage,
 } from "@claritas/contracts";
+import { authApi } from "../api/client";
+import { WS_URL } from "../api/config";
 
 export type ConnectionState = "idle" | "connecting" | "open" | "closed";
 
@@ -22,6 +24,7 @@ interface Entry<L> {
 /**
  * Cliente do WebSocket Claritas: UMA conexão por aba, assinaturas com contagem de referências,
  * reconexão com backoff e reassinatura automática. Só conhece o contrato Claritas — nunca a Binance.
+ * `resolveUrl` é chamado a cada (re)conexão: a URL leva um ticket de uso único da sessão.
  */
 export class MarketStreamClient {
   private ws: WebSocket | null = null;
@@ -32,8 +35,11 @@ export class MarketStreamClient {
   private everOpened = false;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Invalida resoluções de URL em andamento quando a conexão é fechada antes de abrir. */
+  private generation = 0;
+  private resolving = false;
 
-  constructor(private readonly url: string, private readonly createSocket: (url: string) => WebSocket = (u) => new WebSocket(u)) {}
+  constructor(private readonly resolveUrl: () => Promise<string>, private readonly createSocket: (url: string) => WebSocket = (u) => new WebSocket(u)) {}
 
   get connectionState() {
     return this.state;
@@ -76,9 +82,28 @@ export class MarketStreamClient {
   }
 
   private ensureConnected() {
-    if (this.ws || typeof window === "undefined") return;
+    if (this.ws || this.resolving || typeof window === "undefined") return;
     this.setState("connecting");
-    const ws = this.createSocket(this.url);
+    this.resolving = true;
+    const gen = this.generation;
+    this.resolveUrl().then(
+      (url) => {
+        this.resolving = false;
+        if (gen !== this.generation || this.ws) return;
+        this.open(url);
+      },
+      () => {
+        // Sem ticket (API fora ou sessão encerrada — o portão de auth cuida desse caso): tenta de novo com backoff.
+        this.resolving = false;
+        if (gen !== this.generation) return;
+        this.setState("closed");
+        if (this.entries.size > 0) this.scheduleReconnect();
+      },
+    );
+  }
+
+  private open(url: string) {
+    const ws = this.createSocket(url);
     this.ws = ws;
     ws.onopen = () => {
       const reconnected = this.everOpened;
@@ -110,6 +135,8 @@ export class MarketStreamClient {
   }
 
   close() {
+    this.generation++;
+    this.resolving = false;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
     const ws = this.ws;
@@ -158,9 +185,15 @@ export class MarketStreamClient {
   }
 }
 
+/** URL do WebSocket com um ticket novo da sessão atual. */
+export async function ticketedStreamUrl(base = WS_URL): Promise<string> {
+  const { ticket } = await authApi.streamTicket();
+  return `${base}${base.includes("?") ? "&" : "?"}ticket=${encodeURIComponent(ticket)}`;
+}
+
 let shared: MarketStreamClient | null = null;
 /** Instância única por aba. */
-export function getStreamClient(url: string) {
-  shared ??= new MarketStreamClient(url);
+export function getStreamClient() {
+  shared ??= new MarketStreamClient(() => ticketedStreamUrl());
   return shared;
 }

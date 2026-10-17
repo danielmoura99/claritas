@@ -314,7 +314,7 @@ Raios: 2 (chips no gráfico) · 4 (badges, inputs pequenos) · 6 (botões, input
 
 ## Components
 
-A biblioteca completa — 29 componentes em 7 grupos — vive em `design-system/components` e é importada de `@/design-system`. Cada componente tem um `.md` de uso ao lado do `.tsx`; todos os estados estão na rota `/design-system`.
+A biblioteca completa — 32 componentes em 7 grupos — vive em `design-system/components` e é importada de `@/design-system`. Cada componente tem um `.md` de uso ao lado do `.tsx`; todos os estados estão na rota `/design-system`.
 
 - **core:** Button (primary · secondary · ghost · outline · buy · sell; sm/md/lg; loading, disabled, kbd), IconButton (ghost/secondary, active, badge), Badge (6 tons × soft/outline/solid), Panel, Tooltip, Wordmark, Icon (77 ícones Lucide).
 - **forms:** Input (label, hint, erro, prefixo/sufixo, mono, kbd), Select, Checkbox (indeterminado), Switch (sand/up).

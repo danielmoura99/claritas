@@ -145,12 +145,24 @@
         "message": "<IconButton> variant must be one of 'ghost' | 'secondary'."
       },
       {
-        "selector": "JSXOpeningElement[name.name='Input'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|hint|error|icon|prefix|suffix|size|mono|kbd|inputStyle|key|ref|className|style|children|forceFocus|value|defaultValue|placeholder|onChange|onFocus|onBlur|onKeyDown|disabled|type|name|id|autoFocus|autoComplete|required|readOnly|min|max|step|inputMode|aria-label|aria-describedby)$/]",
-        "message": "<Input> doesn't accept that prop. Declared props: label, hint, error, icon, prefix, suffix, size, mono, kbd, inputStyle, forceFocus, value, defaultValue, placeholder, onChange, onFocus, onBlur, onKeyDown, disabled, type, name, id, autoFocus, autoComplete, required, readOnly, min, max, step, inputMode, aria-label, aria-describedby."
+        "selector": "JSXOpeningElement[name.name='Input'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|hint|error|icon|prefix|suffix|size|mono|kbd|end|inputStyle|key|ref|className|style|children|forceFocus|value|defaultValue|placeholder|onChange|onFocus|onBlur|onKeyDown|disabled|type|name|id|autoFocus|autoComplete|required|readOnly|min|max|step|inputMode|aria-label|aria-describedby)$/]",
+        "message": "<Input> doesn't accept that prop. Declared props: label, hint, error, icon, prefix, suffix, size, mono, kbd, end, inputStyle, forceFocus, value, defaultValue, placeholder, onChange, onFocus, onBlur, onKeyDown, disabled, type, name, id, autoFocus, autoComplete, required, readOnly, min, max, step, inputMode, aria-label, aria-describedby."
       },
       {
         "selector": "JSXOpeningElement[name.name='Input'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md|lg)$/]",
         "message": "<Input> size must be one of 'sm' | 'md' | 'lg'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TextLink'] > JSXAttribute > JSXIdentifier[name!=/^(?:href|onClick|disabled|key|ref|className|style|children)$/]",
+        "message": "<TextLink> doesn't accept that prop. Declared props: href, onClick, disabled, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PasswordInput'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|hint|error|size|capsLockHint|defaultVisible|inputStyle|key|ref|className|style|children|forceFocus|value|defaultValue|placeholder|onChange|onFocus|onBlur|onKeyDown|onKeyUp|disabled|name|id|autoFocus|autoComplete|required|readOnly|aria-label|aria-describedby)$/]",
+        "message": "<PasswordInput> doesn't accept that prop. Declared props: label, hint, error, size, capsLockHint, defaultVisible, inputStyle, forceFocus, value, defaultValue, placeholder, onChange, onFocus, onBlur, onKeyDown, onKeyUp, disabled, name, id, autoFocus, autoComplete, required, readOnly, aria-label, aria-describedby."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PasswordInput'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md|lg)$/]",
+        "message": "<PasswordInput> size must be one of 'sm' | 'md' | 'lg'."
       },
       {
         "selector": "JSXOpeningElement[name.name='LiveIndicator'] > JSXAttribute > JSXIdentifier[name!=/^(?:status|label|detail|size|style|key|ref|className|style|children)$/]",
@@ -304,6 +316,12 @@
         "replaces": []
       },
       "Input": {
+        "replaces": []
+      },
+      "PasswordInput": {
+        "replaces": []
+      },
+      "TextLink": {
         "replaces": []
       },
       "LiveIndicator": {

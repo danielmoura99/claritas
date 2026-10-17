@@ -15,7 +15,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Never hardcode color, font, spacing or radius values in app code. Use `var(--token)` or the token-mapped Tailwind utilities (`bg-panel`, `text-fg-secondary`, `border-line`, `text-accent`, `rounded-md`, `shadow-pop`…). The default Tailwind palette is disabled. `npm run lint` runs the design-system adherence rules (`design-system/lint/`).
 - Library map — see [`design-system/README.md`](design-system/README.md) for details and the step-by-step to add a component:
   - `design-system/tokens/` — CSS tokens (colors, typography, spacing, effects, motion, base, light theme); app entry `tokens/index.css`.
-  - `design-system/components/{core,forms,navigation,feedback,market,charts,analysis}/` — 29 typed components, each `Name.tsx` + `Name.md`.
+  - `design-system/components/{core,forms,navigation,feedback,market,charts,analysis}/` — 32 typed components, each `Name.tsx` + `Name.md`.
   - `design-system/templates/terminal/` — Claritas Terminal composition template.
   - `design-system/lib/` — pt-BR formatting, deterministic RNG, `useTween`.
   - `design-system/assets/` — fonts and Lucide icons.

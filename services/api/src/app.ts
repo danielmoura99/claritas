@@ -23,6 +23,10 @@ import { reportRoutes } from "./modules/report/routes";
 import { Database } from "./infrastructure/db";
 import { PreferenceRepository, WatchlistRepository } from "./modules/watchlist/repositories";
 import { persistenceRoutes } from "./modules/watchlist/routes";
+import { AuthService, type SessionVerifier } from "./modules/auth/auth-service";
+import { authRoutes, registerAuthGuard } from "./modules/auth/routes";
+import { StreamTickets } from "./modules/auth/stream-tickets";
+import { LoginThrottle } from "./modules/auth/login-throttle";
 
 export interface AppOptions {
   env: Env;
@@ -32,10 +36,12 @@ export interface AppOptions {
   streamSource?: MarketStreamSource;
   /** Banco injetável para testes; padrão: DATABASE_URL (ou nenhum). */
   database?: Database;
+  /** Verificação de sessão injetável (testes sem banco); padrão: sessões do banco. */
+  sessions?: SessionVerifier;
 }
 
 /** Monta a instância Fastify (sem escutar porta) — usada pelo servidor e pelos testes via `inject`. */
-export async function buildApp({ env, logger, provider: injectedProvider, streamSource, database }: AppOptions): Promise<FastifyInstance> {
+export async function buildApp({ env, logger, provider: injectedProvider, streamSource, database, sessions }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: logger ?? { level: env.LOG_LEVEL, redact: ["req.headers.authorization", "req.headers.cookie"] },
     genReqId: (req) => {
@@ -43,6 +49,8 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
       return typeof incoming === "string" && /^[\w-]{1,64}$/.test(incoming) ? incoming : randomUUID();
     },
     requestIdHeader: false,
+    // N saltos = confia nos N proxies mais próximos (mesma semântica do número no proxy-addr).
+    trustProxy: typeof env.TRUST_PROXY === "number" ? ((hops: number) => (_addr: string, i: number) => i < hops)(env.TRUST_PROXY) : env.TRUST_PROXY,
   });
 
   app.addHook("onSend", async (req, reply) => {
@@ -69,7 +77,16 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
       else cb(null, false);
     },
     methods: ["GET", "PUT", "POST", "DELETE"],
+    credentials: true,
   });
+
+  // Banco antes das rotas: a autenticação depende dele.
+  const db = database ?? new Database(env.DATABASE_URL);
+  app.addHook("onClose", async () => db.close());
+  const sessionTtlMs = env.SESSION_TTL_DAYS * 86_400_000;
+  const auth = new AuthService(db, { sessionTtlMs });
+  const tickets = new StreamTickets();
+  registerAuthGuard(app, { verifier: sessions ?? auth, tickets, allowedOrigins: env.CORS_ORIGIN });
 
   app.setErrorHandler((err, req, reply) => {
     if (isAppError(err)) {
@@ -111,6 +128,15 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
     return { status: "ready", checks: { provider: { id: provider.id, reachable: providerReachable }, stream: app.hub.stats(), database } };
   });
 
+  await app.register(authRoutes, {
+    prefix: "/api/v1/auth",
+    auth,
+    tickets,
+    throttle: new LoginThrottle(),
+    cookieSecure: env.SESSION_COOKIE_SECURE ?? env.NODE_ENV === "production",
+    sessionTtlMs,
+    rateLimitPerMinute: env.AUTH_RATE_LIMIT_PER_MINUTE,
+  });
   await app.register(marketRoutes, { prefix: "/api/v1/market", market });
   const analysis = new AnalysisService(market);
   await app.register(analysisRoutes, { prefix: "/api/v1/analysis", analysis });
@@ -118,9 +144,7 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
   await app.register(scannerRoutes, { prefix: "/api/v1/scanner", scanner });
   const report = new ReportService(market);
   await app.register(reportRoutes, { prefix: "/api/v1/report", report });
-  const db = database ?? new Database(env.DATABASE_URL);
   await app.register(persistenceRoutes, { prefix: "/api/v1", watchlist: new WatchlistRepository(db), preferences: new PreferenceRepository(db), market });
-  app.addHook("onClose", async () => db.close());
 
   let clockOffsetMs = 0;
   const refreshClockOffset = async () => {

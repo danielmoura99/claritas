@@ -11,6 +11,9 @@ const VIEWPORTS = [
 /** Elementos que dependem de relógio de parede ou animação contínua não entram na comparação. */
 const masks = (page: Page) => [page.locator("[role=status]"), page.locator("text=/atualizado/"), page.locator("text=/calculado/")];
 
+/** Gráfico animado da vitrine ilustrativa do login. */
+const showcaseChart = (page: Page) => page.getByTestId("login-showcase-chart");
+
 async function settle(page: Page) {
   // Indicador do modo dev do Next não faz parte do produto.
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
@@ -50,8 +53,69 @@ for (const vp of VIEWPORTS) {
       await expect(page).toHaveScreenshot(`resumo-${vp.name}.png`, { mask: masks(page), fullPage: vp.name === "1440" });
       await api.close();
     });
+
+    test("entrar", async ({ page }) => {
+      const api = await useFrozenApi(page, { signedIn: false });
+      await page.goto("/entrar");
+      await expect(page.getByRole("heading", { name: "Entre no seu terminal." })).toBeVisible();
+      // Vitrine ILUSTRATIVA (mock só do login): o gráfico anima continuamente, então fica fora da comparação.
+      if (vp.width >= 980) await expect(page.getByText("Leitura Claritas")).toBeVisible();
+      await settle(page);
+      await expect(page).toHaveScreenshot(`entrar-${vp.name}.png`, { mask: [...masks(page), showcaseChart(page)] });
+      await api.close();
+    });
   });
 }
+
+test.describe("acesso (dados congelados)", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("sem cookie de sessão, qualquer tela leva a /entrar com o destino", async ({ page }) => {
+    const api = await useFrozenApi(page, { signedIn: false });
+    await page.goto("/relatorio?symbol=ETHUSDT");
+    await expect(page).toHaveURL(/\/entrar\?next=%2Frelatorio%3Fsymbol%3DETHUSDT$/);
+    await api.close();
+  });
+
+  test("criar conta valida os campos antes de chamar a API", async ({ page }) => {
+    const api = await useFrozenApi(page, { signedIn: false });
+    const calls: string[] = [];
+    page.on("request", (r) => r.url().includes("/api/v1/auth/register") && calls.push(r.url()));
+    await page.goto("/entrar?modo=criar");
+    await expect(page.getByRole("heading", { name: "Crie seu acesso." })).toBeVisible();
+    await page.getByLabel("E-mail").fill("não-é-email");
+    await page.getByLabel("Senha", { exact: true }).fill("curta");
+    await page.getByRole("button", { name: "Criar conta e entrar" }).click();
+    await expect(page.getByText("Informe seu nome")).toBeVisible();
+    await expect(page.getByText("E-mail inválido")).toBeVisible();
+    await expect(page.getByText("A senha precisa de ao menos 8 caracteres")).toBeVisible();
+    expect(calls).toEqual([]);
+    await settle(page);
+    await expect(page).toHaveScreenshot("entrar-criar-erros-1440.png", { mask: masks(page) });
+    await api.close();
+  });
+
+  test("mostrar/ocultar senha", async ({ page }) => {
+    const api = await useFrozenApi(page, { signedIn: false });
+    await page.goto("/entrar");
+    const field = page.getByLabel("Senha", { exact: true });
+    await field.fill("segredo-123");
+    await expect(field).toHaveAttribute("type", "password");
+    await page.getByRole("button", { name: "Mostrar senha" }).click();
+    await expect(field).toHaveAttribute("type", "text");
+    await page.getByRole("button", { name: "Ocultar senha" }).click();
+    await expect(field).toHaveAttribute("type", "password");
+    await api.close();
+  });
+
+  test("terminal mostra a conta da sessão e a opção Sair", async ({ page }) => {
+    const api = await useFrozenApi(page);
+    await page.goto("/scanner");
+    await expect(page.getByText("Analista de Teste")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sair" })).toBeVisible();
+    await api.close();
+  });
+});
 
 test.describe("estados (dados congelados)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
@@ -102,6 +166,54 @@ test.describe("estados (dados congelados)", () => {
     await page.waitForTimeout(3_000); // a resposta de SOL chega depois
     await expect(page.getByText("SOLUSDT · 5m")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^ETHUSDT/ }).first()).toBeVisible();
+    await api.close();
+  });
+});
+
+test.describe("tela de entrada (kit do Claude Design)", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("vitrine ilustrativa só no login; o terminal nunca mostra confiança em %", async ({ page }) => {
+    const api = await useFrozenApi(page, { signedIn: false });
+    await page.goto("/entrar");
+    const side = page.getByRole("region", { name: "Vitrine ilustrativa do terminal" });
+    await expect(side.getByText("Leitura Claritas")).toBeVisible();
+    await expect(side.getByText(/conf\. \d+%/)).toBeVisible();
+    await api.close();
+    const signed = await useFrozenApi(page);
+    await page.goto("/?symbol=BTCUSDT&interval=5m");
+    await expect(page.locator("canvas").first()).toBeVisible();
+    await expect(page.getByText(/conf\. \d+%/)).toHaveCount(0);
+    await expect(page.getByText("IBOV")).toHaveCount(0);
+    await signed.close();
+  });
+
+  test("'Manter conectado' vai no login; recursos sem backend avisam em vez de simular", async ({ page }) => {
+    const api = await useFrozenApi(page, { signedIn: false });
+    const bodies: unknown[] = [];
+    page.on("request", (r) => r.url().endsWith("/api/v1/auth/login") && bodies.push(r.postDataJSON()));
+    await page.goto("/entrar");
+    await page.getByRole("button", { name: "SSO corporativo" }).click();
+    await expect(page.getByText("SSO corporativo ainda não está disponível")).toBeVisible();
+    await page.getByRole("button", { name: "Esqueci a senha" }).click();
+    await expect(page.getByText(/Recuperação de senha ainda não está disponível/)).toBeVisible();
+    await page.getByLabel("E-mail").fill("analista@claritas.test");
+    await page.getByLabel("Senha", { exact: true }).fill("uma-senha-qualquer");
+    await page.getByText("Manter conectado neste dispositivo").click();
+    await page.getByRole("button", { name: "Entrar", exact: true }).click();
+    await expect.poll(() => bodies.length).toBe(1);
+    expect(bodies[0]).toMatchObject({ email: "analista@claritas.test", remember: false });
+    await api.close();
+  });
+
+  test("'Criar conta' e '← Já tenho conta' alternam os passos", async ({ page }) => {
+    const api = await useFrozenApi(page, { signedIn: false });
+    await page.goto("/entrar");
+    await page.getByRole("button", { name: "Criar conta", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Crie seu acesso." })).toBeVisible();
+    await expect(page.getByLabel("Nome")).toBeVisible();
+    await page.getByRole("button", { name: "← Já tenho conta" }).click();
+    await expect(page.getByRole("heading", { name: "Entre no seu terminal." })).toBeVisible();
     await api.close();
   });
 });

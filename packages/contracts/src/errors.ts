@@ -11,6 +11,10 @@ export const ERROR_CODES = [
   "RATE_LIMITED",
   "INSUFFICIENT_DATA",
   "DB_UNAVAILABLE",
+  "UNAUTHENTICATED",
+  "INVALID_CREDENTIALS",
+  "EMAIL_TAKEN",
+  "FORBIDDEN",
   "INTERNAL",
 ] as const;
 export const ErrorCodeSchema = z.enum(ERROR_CODES);

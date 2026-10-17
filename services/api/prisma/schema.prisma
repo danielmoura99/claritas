@@ -1,4 +1,4 @@
-// Persistência de PRODUTO (não de cotações): watchlist e preferências do terminal.
+// Persistência de PRODUTO (não de cotações): contas, sessões, watchlist e preferências do terminal.
 // Dono único das migrações: services/api. Ver docs/PERSISTENCE.md.
 
 generator client {
@@ -10,13 +10,44 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Lista de ativos acompanhados. Sem autenticação nesta fase: existe a lista "default" compartilhada.
+/// Conta de acesso ao terminal (e-mail + senha). A senha é guardada só como hash scrypt.
+model User {
+  id           String          @id @default(cuid())
+  /// Sempre em minúsculas (normalizado pelo contrato).
+  email        String          @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  sessions     Session[]
+  watchlist    Watchlist?
+  preference   UserSettings?
+}
+
+/// Sessão de login. O token vai só no cookie do navegador; aqui fica apenas o SHA-256 dele.
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  lastUsedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Lista de ativos acompanhados. Uma por usuário; a lista sem dono chamada "default" é o modelo copiado
+/// para contas novas (criada pelo seed).
 model Watchlist {
   id        String          @id @default(cuid())
-  name      String          @unique
+  name      String
+  userId    String?         @unique
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
   items     WatchlistItem[]
+  user      User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 /// Item identificado de forma independente do provedor (base/cotação), não pelo símbolo da Binance.
@@ -33,7 +64,19 @@ model WatchlistItem {
   @@index([watchlistId, position])
 }
 
-/// Preferências do terminal por cliente anônimo (id opaco gerado no navegador). Não é conta de usuário.
+/// Preferências do terminal por usuário (último ativo, intervalo, leitura ligada).
+model UserSettings {
+  userId       String   @id
+  symbol       String?
+  interval     String?
+  showAnalysis Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// LEGADO (até a autenticação, out/2026): preferências por cliente anônimo. Não é mais lida nem escrita;
+/// mantida para não apagar dados numa migração. Remover só com decisão registrada (docs/DECISIONS.md).
 model UserPreference {
   clientId     String   @id
   symbol       String?

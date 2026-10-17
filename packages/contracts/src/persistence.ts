@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { IntervalSchema, SymbolSchema } from "./market";
 
-/** Id opaco do cliente anônimo (gerado no navegador). Não identifica pessoa nem conta. */
-export const ClientIdSchema = z.string().regex(/^[A-Za-z0-9-]{8,64}$/, "clientId inválido");
-
 export const WatchlistItemSchema = z.object({
   /** Identidade independente do provedor. */
   baseAsset: z.string(),
@@ -12,6 +9,7 @@ export const WatchlistItemSchema = z.object({
   symbol: z.string(),
   position: z.number().int(),
 });
+/** Watchlist do usuário da sessão. */
 export const WatchlistSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -20,8 +18,8 @@ export const WatchlistSchema = z.object({
 });
 export type Watchlist = z.infer<typeof WatchlistSchema>;
 
+/** Preferências do terminal do usuário da sessão. */
 export const PreferenceSchema = z.object({
-  clientId: ClientIdSchema,
   symbol: z.string().nullable(),
   interval: IntervalSchema.nullable(),
   showAnalysis: z.boolean(),

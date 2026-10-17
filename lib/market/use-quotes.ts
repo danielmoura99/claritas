@@ -3,7 +3,6 @@
 import * as React from "react";
 import type { MarketStatus, Quote } from "@claritas/contracts";
 import { marketApi } from "../api/client";
-import { WS_URL } from "../api/config";
 import { getStreamClient } from "./stream-client";
 
 export interface QuotesState {
@@ -38,7 +37,7 @@ export function useQuotes(symbols: string[]): QuotesState {
       .catch((err: unknown) => {
         if (alive && (err as Error).name !== "AbortError") setError(true);
       });
-    const client = getStreamClient(WS_URL);
+    const client = getStreamClient();
     const offs = list.map((s) =>
       client.subscribeQuote(s, {
         onQuote: (m) => alive && setQuotes((q) => ({ ...q, [m.data.symbol]: m.data })),

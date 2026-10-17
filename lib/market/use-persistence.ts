@@ -32,7 +32,7 @@ function load() {
   return loading;
 }
 
-/** Watchlist persistida (PostgreSQL via API). Estado compartilhado entre os componentes da aba. */
+/** Watchlist do usuário da sessão (PostgreSQL via API). Estado compartilhado entre os componentes da aba. */
 export function useWatchlist() {
   const [state, setState] = React.useState<{ watchlist: Watchlist | null; unavailable: boolean }>({ watchlist: current, unavailable });
   const [pending, setPending] = React.useState(false);
@@ -64,25 +64,9 @@ export function useWatchlist() {
 
 // ---------------------------------------------------------------- preferências
 
-const CLIENT_KEY = "claritas-client-id";
-
-/** Id anônimo e opaco deste navegador (não identifica pessoa). */
-export function getClientId(): string | null {
-  try {
-    let id = localStorage.getItem(CLIENT_KEY);
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem(CLIENT_KEY, id);
-    }
-    return id;
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Preferências do terminal no banco: restaura o último ativo/intervalo quando a URL não traz seleção
- * e salva (com atraso) as mudanças seguintes.
+ * Preferências do terminal do usuário (banco): restaura o último ativo/intervalo quando a URL não traz
+ * seleção e salva (com atraso) as mudanças seguintes.
  */
 export function usePreferenceSync(opts: {
   symbol: string;
@@ -99,10 +83,9 @@ export function usePreferenceSync(opts: {
   });
 
   React.useEffect(() => {
-    const id = getClientId();
     const abort = new AbortController();
-    // Sem armazenamento local (id null) segue o mesmo caminho assíncrono e só marca como restaurado.
-    (id ? persistenceApi.getPreferences(id, abort.signal) : Promise.reject(new Error("sem clientId")))
+    persistenceApi
+      .getPreferences(abort.signal)
       .then((p) => {
         if (!p) return;
         restoreRef.current({
@@ -120,9 +103,7 @@ export function usePreferenceSync(opts: {
 
   React.useEffect(() => {
     if (!restored) return;
-    const id = getClientId();
-    if (!id) return;
-    const t = setTimeout(() => void persistenceApi.putPreferences(id, { symbol, interval, showAnalysis }).catch(() => {}), 1_000);
+    const t = setTimeout(() => void persistenceApi.putPreferences({ symbol, interval, showAnalysis }).catch(() => {}), 1_000);
     return () => clearTimeout(t);
   }, [restored, symbol, interval, showAnalysis]);
 }

@@ -13,7 +13,7 @@ Todos os componentes, estados e os dois temas aparecem na rota **`/design-system
 |---|---|
 | `index.ts` | Entrada pública. Sempre `import { Button } from "@/design-system"`. |
 | `tokens/` | CSS custom properties. `colors.css` (paletas + semânticos + aliases de componente), `typography.css`, `spacing.css` (espaço, raio, alturas, z-index), `effects.css` (sombras, glows, foco, blur, fundos), `motion.css` (durações, easings, keyframes `cl-*`), `base.css` (defaults de elemento + utilitários `.cl-num` `.cl-label` `.cl-serif` `.cl-up` `.cl-down` `.cl-sand` `.cl-dotgrid`), `theme-light.css` (tema claro derivado), `fonts.css` (`@font-face` locais, usado só pelas referências), `index.css` (entrada do app). |
-| `components/<grupo>/` | 29 componentes React tipados, cada um com `Nome.tsx` + `Nome.md` (uso). Grupos: `core` (7), `forms` (4), `navigation` (2), `feedback` (3), `market` (4), `charts` (5), `analysis` (4). Barrel em `components/index.ts`. |
+| `components/<grupo>/` | 32 componentes React tipados, cada um com `Nome.tsx` + `Nome.md` (uso). Grupos: `core` (7), `forms` (5), `navigation` (3), `feedback` (3), `market` (4), `charts` (6), `analysis` (4). Barrel em `components/index.ts`. |
 | `templates/terminal/` | Template de composição Claritas Terminal (Pregão ao vivo · Scanner · Relatório), montado só com componentes da biblioteca. `TerminalApp` é a raiz; `data.ts` tem dados fictícios. |
 | `lib/` | Helpers compartilhados: `format.ts` (números e hora pt-BR), `random.ts` (RNG determinístico — SSR e hidratação iguais), `useTween.ts`. |
 | `assets/fonts/` | Geist, Geist Mono, Instrument Serif (woff2, OFL). |

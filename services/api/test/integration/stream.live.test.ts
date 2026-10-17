@@ -6,6 +6,7 @@ import type { ServerMessage } from "@claritas/contracts";
 import { buildApp } from "../../src/app";
 import { parseEnv } from "../../src/config/env";
 import { BinanceStreamSource } from "../../src/providers/binance/stream-source";
+import { streamTicket, testSessions } from "../helpers/auth";
 
 // Integração REAL: Binance WSS → hub → WebSocket Claritas. Rede necessária.
 let app: FastifyInstance;
@@ -15,14 +16,15 @@ let wsUrl: string;
 beforeAll(async () => {
   const env = parseEnv({ LOG_LEVEL: "silent", CORS_ORIGIN: "http://localhost:3000", STREAM_UPSTREAM_LINGER_MS: "0" });
   source = new BinanceStreamSource({ wsUrl: env.BINANCE_SPOT_WS_URL });
-  app = await buildApp({ env, logger: false, streamSource: source });
+  app = await buildApp({ env, logger: false, streamSource: source, sessions: testSessions });
   await app.listen({ host: "127.0.0.1", port: 0 });
   wsUrl = `ws://127.0.0.1:${(app.server.address() as AddressInfo).port}/api/v1/market/stream`;
 });
 afterAll(() => app.close());
 
-function client(origin = "http://localhost:3000") {
-  const ws = new WebSocket(wsUrl, { headers: { origin } });
+async function client(origin = "http://localhost:3000") {
+  // Cada conexão consome um ticket de uso único (a sessão é a de teste).
+  const ws = new WebSocket(`${wsUrl}?ticket=${await streamTicket(app)}`, { headers: { origin } });
   const msgs: ServerMessage[] = [];
   ws.on("message", (d) => msgs.push(JSON.parse(d.toString())));
   const opened = new Promise<void>((res, rej) => {
@@ -45,7 +47,7 @@ const statuses = (msgs: ServerMessage[]) => msgs.filter((m): m is Extract<Server
 
 describe("WebSocket Claritas com Binance real", () => {
   it("recebe candle.upsert com dados do WSS e dois clientes compartilham o upstream", async () => {
-    const a = client(), b = client();
+    const [a, b] = await Promise.all([client(), client()]);
     await Promise.all([a.opened, b.opened]);
     a.send({ type: "subscribe", channel: "candles", symbol: "BTCUSDT", interval: "1m" });
     b.send({ type: "subscribe", channel: "candles", symbol: "BTCUSDT", interval: "1m" });
@@ -64,11 +66,11 @@ describe("WebSocket Claritas com Binance real", () => {
   });
 
   it("recusa origem não autorizada e símbolo inexistente", async () => {
-    const evil = client("https://evil.example");
+    const evil = await client("https://evil.example");
     const closed = await new Promise<number>((res) => evil.ws.once("close", (code) => res(code)));
     expect(closed).toBe(1008);
 
-    const c = client();
+    const c = await client();
     await c.opened;
     c.send({ type: "subscribe", channel: "candles", symbol: "ZZZZNOTREALUSDT", interval: "5m" });
     await until(() => c.msgs.some((m) => m.type === "error"), 10_000);
@@ -77,7 +79,7 @@ describe("WebSocket Claritas com Binance real", () => {
   });
 
   it("queda da conexão Binance: reconnecting → reconciliação REST → live de novo", async () => {
-    const c = client();
+    const c = await client();
     await c.opened;
     c.send({ type: "subscribe", channel: "candles", symbol: "ETHUSDT", interval: "1m" });
     await until(() => statuses(c.msgs).includes("live"), 20_000);

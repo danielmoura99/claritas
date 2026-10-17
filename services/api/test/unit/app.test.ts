@@ -56,7 +56,8 @@ describe("config", () => {
 
 describe("sem banco configurado", () => {
   it("rotas de persistência respondem 503 DB_UNAVAILABLE e o resto da API segue de pé", async () => {
-    const res = await app.inject("/api/v1/watchlist");
+    // Com cookie, a sessão precisa do banco para ser verificada: 503 explícito, não 401.
+    const res = await app.inject({ url: "/api/v1/watchlist", headers: { cookie: `claritas_session=${"x".repeat(43)}` } });
     expect(res.statusCode).toBe(503);
     expect(res.json().error.code).toBe("DB_UNAVAILABLE");
     expect((await app.inject("/health")).statusCode).toBe(200);

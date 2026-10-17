@@ -3,7 +3,6 @@
 import * as React from "react";
 import type { Candle, FeedStatus, Interval, MarketStatus } from "@claritas/contracts";
 import { describeError, marketApi } from "../api/client";
-import { WS_URL } from "../api/config";
 import { mergeCandles, upsertCandle } from "./chart-adapter";
 import { getStreamClient } from "./stream-client";
 
@@ -42,7 +41,7 @@ export function useLiveCandles(symbol: string, interval: Interval, limit = 500):
   }, []);
 
   React.useEffect(() => {
-    const client = getStreamClient(WS_URL);
+    const client = getStreamClient();
     const abort = new AbortController();
     let historyLoaded = false;
     let pending: Candle[] = [];

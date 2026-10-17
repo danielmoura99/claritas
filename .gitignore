@@ -49,3 +49,6 @@ playwright-report/
 
 # Prisma Client gerado (prisma generate)
 services/api/src/generated/
+
+# sessão salva pelo setup do Playwright (cookie da conta E2E local)
+/e2e/.auth/

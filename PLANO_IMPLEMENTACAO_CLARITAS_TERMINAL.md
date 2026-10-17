@@ -610,10 +610,10 @@ DATABASE_URL=postgresql://claritas:change_me@localhost:5432/claritas
 | ADR-006 | Sem simulador na aplicação | Escopo explicitamente alterado pelo responsável | **Aceita** |
 | ADR-007 | PostgreSQL/Prisma para dados de produto, não feed tick-by-tick no MVP | Simplificar sem sacrificar arquitetura futura | **Aceita** |
 | ADR-008 | Gráfico real via Lightweight Charts dentro do visual Claritas | Atualização incremental e bom desempenho | **Aceita; validar viabilidade visual na etapa zero** |
-| ADR-009 | Seleção do deploy da API | Depende de custos, região e WS persistente | **Pendente — proposta em `docs/DEPLOY.md` (Render Docker, região próxima a Tóquio; Vercel para o web; Neon)** |
+| ADR-009 | Seleção do deploy da API | Depende de custos, região e WS persistente | **Decidida pelo responsável (15/10): Render free, runtime Node, região Frankfurt (Singapura teve o IP de saída banido pela Binance); Vercel para o web; Neon — ver `docs/DEPLOY.md`** |
 | ADR-010 | Regra exata dos indicadores e dos sinais | Não há estratégia quantitativa definida | **Pendente; não inventar** |
 | ADR-011 | Estrutura física do design system no repositório | Não foi inspecionada na raiz real | **Resolvida (14/10): `design-system/` + `DESIGN.md`; ver `docs/DECISIONS.md`** |
-| ADR-012 | Autenticação e persistência de preferências | Nenhuma obrigação inicial definida | **Adiada** |
+| ADR-012 | Autenticação e persistência de preferências | Nenhuma obrigação inicial definida | **Resolvida (16/10) pelo ADR-018: login obrigatório, cadastro aberto, sessão opaca em cookie HttpOnly emitida pela API — ver `docs/DECISIONS.md`** |
 
 Para mudar uma decisão aceita: abrir registro em `docs/DECISIONS.md` contendo **situação, opções, trade-off, decisão, data, arquivos afetados e estratégia de migração**. Não alterar silenciosamente.
 
@@ -699,13 +699,14 @@ O agente executor deve trabalhar **incrementalmente e com evidências**:
 | 6. Scanner real | **CONCLUÍDA** (14/10) | `GET /api/v1/scanner?quote&size&timeframe`: universo = top N USDT por volume 24h real (1 ticker de todos, cache 60 s; exclui bases lastreadas), métricas por ativo via klines com concorrência limitada (`SCANNER_CONCURRENCY`) e cache por barra, resultado em cache 30 s; tela no layout do template (critérios, feixe só durante a varredura real, tabela com sparkline/último/var. 24h/setup/vol. rel./evento), filtros no cliente sem novas chamadas, clique abre o ativo no Pregão; testes: 3 unitários (ranking/exclusão/concorrência ≤ limite/cache) + 4 de critérios + 1 integração real; navegador: 30 reais → filtro → XRPUSDT/15m aberto | — |
 | 7. Relatório com janela explícita | **CONCLUÍDA** (14/10) | `GET /api/v1/report?symbol&window=(rolling_24h ou day)&date&tz` (OHLCV, variação, amplitude, volatilidade realizada, maior queda/alta, regime ao fim, eventos na janela, movers 24h, lista de método); tela "Resumo do período" (ADR-015) no layout do template com manchete determinística, KPIs, gráfico do período, destaques e método; correção no `MarketChart` (reenquadrar quando os dados chegam após estado vazio); testes: 5 unitários (fuso via Intl, limites de dia BRT/UTC, drawdown) + 2 integração real; navegador: 24h móveis e Dia/UTC parcial corretos; screenshots `docs/screenshots/etapa-7/` | — |
 | 8. PostgreSQL/Prisma | **CONCLUÍDA** (15/10) | Prisma 7.10.0 + adapter-pg em `services/api/prisma` (Watchlist, WatchlistItem por base/cotação, UserPreference por id anônimo); migração `init` aplicada com `migrate deploy` no **Neon** (banco do projeto, definido pelo responsável) + seed sem cotações; rotas `/api/v1/watchlist` e `/api/v1/preferences/:clientId`, 503 `DB_UNAVAILABLE` sem banco; `/ready` com `database`; frontend: estrela "Favoritar", seção Watchlist no seletor, restauração do último ativo/intervalo; testes: 5 de banco real (banco descartável vazio + `migrate deploy`, só local) + 1 unitário 503; navegador contra Neon: adicionar/remover e restaurar preferência OK; `docs/PERSISTENCE.md` (backup/rollback) | Autenticação/listas por usuário adiadas (ADR-012) |
-| 9. Qualidade e deploy | **PARCIAL** (15/10) — qualidade concluída; **deploy bloqueado** | Playwright: projeto `live` (8 testes na pilha real: atualização ao vivo, troca ativo/timeframe, scanner → pregão, resumo, fontes, foco por teclado, reduced-motion, sem vazamento de assinaturas) e `visual` (9 baselines 1440/1366/390 das 3 telas com dados congelados só no teste + 4 estados: offline, stale, provedor fora com retry, resposta tardia ignorada) — **21/21 contra o build de produção**; achado e corrigido: canvas do gráfico interceptava o clique em "Tentar novamente"; rate limit por IP (`429 RATE_LIMITED`), cabeçalhos de segurança (API e Next); `npm audit` sem críticas (9 altas só em CLI/lint, documentadas); `Dockerfile` da API, `render.yaml`, `docs/DEPLOY.md` | Deploy público vetado nesta fase e sem contas/Docker no ambiente; CSP com nonce; revisão dos termos de dados da Binance; ADR-009 (host da API) — ver `docs/DEPLOY.md` |
+| 9. Qualidade e deploy | **PARCIAL** (16/10) — qualidade concluída; deploy **configurado pelo responsável** (commits `6b97d81`, `1d157cf`: Render free em Frankfurt + Vercel + Neon, ADR-009); publicação da versão com login pendente | Playwright: projeto `live` (8 testes na pilha real: atualização ao vivo, troca ativo/timeframe, scanner → pregão, resumo, fontes, foco por teclado, reduced-motion, sem vazamento de assinaturas) e `visual` (9 baselines 1440/1366/390 das 3 telas com dados congelados só no teste + 4 estados: offline, stale, provedor fora com retry, resposta tardia ignorada) — **21/21 contra o build de produção**; achado e corrigido: canvas do gráfico interceptava o clique em "Tentar novamente"; rate limit por IP (`429 RATE_LIMITED`), cabeçalhos de segurança (API e Next); `npm audit` sem críticas (9 altas só em CLI/lint, documentadas); `Dockerfile` da API, `render.yaml`, `docs/DEPLOY.md` | Publicar a autenticação na ordem de `docs/DEPLOY.md` (migração no Neon → API → web com `CLARITAS_API_URL`); conferir `TRUST_PROXY`; CSP com nonce; revisão dos termos de dados da Binance; URLs públicas não registradas no repositório |
+| 10. Autenticação por usuário (ADR-012 → ADR-018) | **CONCLUÍDA localmente** (16/10) — branch `feat/autenticacao` | API: módulo `auth` (scrypt, sessão opaca em cookie HttpOnly/SameSite=Lax com SHA-256 no banco, `register/login/logout/session/stream-ticket`), guarda em todo `/api/v1` acoplado após o rate limit, limite das rotas de senha + 10 falhas/e-mail, `403` para escrita de outra origem, ticket de uso único no WebSocket; Prisma: `User`, `Session`, `UserSettings`, `Watchlist.userId` (migração aditiva `20261016120000_auth`, aplicada só em bancos locais); web: `/entrar` fiel ao kit `ui_kits/login` do Claude Design (formulário à esquerda com "Manter conectado" real; painel de mercado ILUSTRATIVO/mockado, exceção nominal à regra sem dados fictícios decidida pelo responsável; "Esqueci a senha"/SSO/Privacidade/Suporte só avisam que ainda não existem; "Criar conta" como passo), `proxy.ts` (redirecionamento otimista), repasse `/api/v1` no `next.config.ts`, portão de sessão não bloqueante, nome + Sair no topo; design system: `PasswordInput` e `TextLink` (novos) e `Input` com nome acessível só do rótulo (dica/erro em `aria-describedby`); testes: 110 unitários (guarda anti-fictício agora barra `<CandleChart>` fora da exceção), 15 de banco real, Playwright visual 23/23 (4 baselines de `/entrar`, gráfico animado mascarado), live 10/10 + setup na versão anterior da tela (a reexecução após o redesenho ficou bloqueada por uma API do responsável ligada ao Neon na porta 4000 — a trava do setup parou a suíte antes de gravar), integração 13/13 (1 intermitente na queda forçada do upstream, verde ao repetir) | Migração no Neon e deploy (ação do responsável); recuperação de senha e verificação de e-mail (exigem serviço de e-mail); E2E contra o build de produção |
 
-**Última atualização do estado:** 15/10/2026 — etapas 0–8 concluídas e validadas; etapa 9 concluída na parte de qualidade, com o deploy público bloqueado por decisão do responsável (não publicar externamente) e por falta de contas/Docker no ambiente.
+**Última atualização do estado:** 16/10/2026 — etapas 0–8 concluídas; etapa 9 com qualidade concluída e deploy configurado pelo responsável (Render free/Frankfurt + Vercel + Neon); etapa 10 (login obrigatório com cadastro aberto) concluída e validada localmente, ainda não publicada.
 
-**Bloqueador atual:** deploy (Etapa 9) — requer autorização para publicar, contas Vercel + Render/Fly e decisão do ADR-009. Nada mais bloqueia o uso local.
+**Bloqueador atual:** nenhum técnico. A publicação do login depende do responsável aplicar a migração `20261016120000_auth` no Neon (agentes não alteram o banco real sem autorização explícita) e publicar API e web nessa ordem.
 
-**Próxima ação única:** decidir o host da API (ADR-009) e autorizar o deploy; então seguir o passo a passo de `docs/DEPLOY.md` (branch Neon → `docker build` → Render Blueprint → Vercel → `npm run test:e2e -- --project=live` contra o domínio).
+**Próxima ação única:** revisar e integrar `feat/autenticacao`; depois seguir `docs/DEPLOY.md` → "Publicar a autenticação" (branch Neon → `npm run db:migrate` + `db:seed` → deploy da API → `CLARITAS_API_URL` na Vercel → deploy da web → conferir `TRUST_PROXY` nos logs).
 
 ### Registro da sessão de execução (14–15/10/2026)
 
@@ -720,6 +721,25 @@ Diferenças visuais: telas reais mantêm o layout do template (topbar 60, rail 5
 Decisões: ADR-011, 013 a 017 em docs/DECISIONS.md; banco do projeto = Neon (definido pelo responsável em 15/10)
 Problemas/bloqueios: deploy (acima). Incidente 15/10: um comando de edição de documentação executou trechos por substituição do shell e sobrescreveu o .env local (credenciais Neon); arquivo restaurado do histórico local do VS Code, sem impacto no banco (as migrações disparadas falharam contra o host de exemplo). Prevenção: edições de texto só por ferramentas de arquivo
 Estado Git depois: feat/claritas-terminal com os commits das etapas 0–9
+Próximo passo único: ver "Próxima ação única" acima
+```
+
+### Registro da sessão de execução (16/10/2026)
+
+```text
+Data / hora / fuso: 16/10/2026 (America/Sao_Paulo)
+Agente ou responsável: Claude (Claude Code), a pedido do responsável
+Etapa ativa: 10 — autenticação por usuário (ADR-012 → ADR-018); atualização do estado da Etapa 9
+Decisões do responsável: login obrigatório em todo o terminal; cadastro aberto na tela de entrada
+Estado Git antes: master @ 1d157cf (+ "Claritas Terminal.html" não versionado)
+Referência visual: "Claritas Terminal.html" (bundle do protótipo) não contém tela de login; /entrar foi composta
+  com os mesmos tokens, wordmark, voz serifada e componentes do protótipo
+Resultados: lint OK · typecheck OK · npm test 110/110 · test:db 15/15 · test:integration 12/13 → 13/13 ao repetir
+  (queda forçada do upstream Binance, dependente de tempo) · build OK · test:e2e 31/31 (contra next dev) antes do
+  redesenho do login; depois dele: visual 23/23, live pendente (porta 4000 ocupada por API ligada ao Neon)
+Tela de entrada: idêntica ao kit ui_kits/login (Claude Design); painel ilustrativo mockado só no login (exceção do responsável)
+Banco: migração aplicada apenas no cluster local (testes e claritas_e2e). Neon NÃO foi alterado
+Estado Git depois: branch feat/autenticacao
 Próximo passo único: ver "Próxima ação única" acima
 ```
 

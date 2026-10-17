@@ -10,7 +10,16 @@ const FORBIDDEN: [RegExp, string][] = [
   [/generateSeries/, "série gerada (CandleChart.generateSeries)"],
   [/CL_DATA|templates\/terminal/, "dados/telas fictícias do template"],
   [/test\/fixtures|__fixtures__/, "fixtures de teste"],
+  [/<CandleChart\b/, "CandleChart (gera série própria; dados reais usam MarketChart)"],
 ];
+
+/**
+ * Exceções NOMINAIS, decididas pelo responsável e registradas em ADR. Cada uma libera só os padrões listados
+ * e só naquele arquivo. Vitrine ilustrativa da tela de entrada (ADR-018, 16/10/2026): fiel ao kit do Claude Design.
+ */
+const ALLOWED: Record<string, string[]> = {
+  "components/auth/LoginMarketShowcase.tsx": ["CandleChart (gera série própria; dados reais usam MarketChart)"],
+};
 
 function walk(dir: string): string[] {
   let entries: string[] = [];
@@ -36,8 +45,20 @@ describe("sem dados fictícios no runtime", () => {
 
   for (const [pattern, label] of FORBIDDEN) {
     it(`nenhum uso de ${label}`, () => {
-      const offenders = files.filter((f) => pattern.test(readFileSync(f, "utf8"))).map((f) => relative(ROOT, f));
+      const offenders = files
+        .filter((f) => pattern.test(readFileSync(f, "utf8")))
+        .map((f) => relative(ROOT, f).replace(/\\/g, "/"))
+        .filter((f) => !ALLOWED[f]?.includes(label));
       expect(offenders).toEqual([]);
     });
   }
+});
+
+describe("exceções do guarda", () => {
+  it("cada exceção aponta para um arquivo que existe e ainda precisa dela", () => {
+    for (const [file, labels] of Object.entries(ALLOWED)) {
+      const text = readFileSync(join(ROOT, file), "utf8");
+      for (const label of labels) expect(FORBIDDEN.find(([, l]) => l === label)?.[0].test(text), `${file}: ${label}`).toBe(true);
+    }
+  });
 });

@@ -12,11 +12,13 @@ export { Wordmark, type WordmarkProps } from "./core/Wordmark";
 // forms
 export { Checkbox, type CheckboxProps } from "./forms/Checkbox";
 export { Input, type InputProps } from "./forms/Input";
+export { PasswordInput, type PasswordInputProps } from "./forms/PasswordInput";
 export { Select, type SelectProps, type SelectOption } from "./forms/Select";
 export { Switch, type SwitchProps } from "./forms/Switch";
 // navigation
 export { SegmentedControl, type SegmentedControlProps, type SegmentOption } from "./navigation/SegmentedControl";
 export { Tabs, type TabsProps, type TabItem } from "./navigation/Tabs";
+export { TextLink, type TextLinkProps } from "./navigation/TextLink";
 // feedback
 export { Dialog, type DialogProps } from "./feedback/Dialog";
 export { LiveIndicator, type LiveIndicatorProps, type LiveStatus } from "./feedback/LiveIndicator";

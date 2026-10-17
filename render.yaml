@@ -31,3 +31,7 @@ services:
         value: wss://data-stream.binance.vision:443
       - key: LOG_LEVEL
         value: info
+      # IP do cliente via X-Forwarded-For: balanceador do Render + repasse /api/v1 da Vercel (ADR-018).
+      # Conferir nos logs após o deploy (docs/DEPLOY.md → Publicar a autenticação).
+      - key: TRUST_PROXY
+        value: "2"

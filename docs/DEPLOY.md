@@ -1,6 +1,8 @@
 # Deploy, segurança e operação (Etapa 9)
 
-> **Status:** topologia escolhida pelo responsável: **Vercel (web) + Render free (API) + Neon (banco)**, um único repositório GitHub. `render.yaml` usa runtime Node nativo no plano free; o `Dockerfile` fica como alternativa (não validado — sem Docker no ambiente de desenvolvimento).
+> **Status:** topologia escolhida pelo responsável (ADR-009): **Vercel (web) + Render free em Frankfurt (API) + Neon (banco)**, um único repositório GitHub. `render.yaml` usa runtime Node nativo no plano free; o `Dockerfile` fica como alternativa (não validado — sem Docker no ambiente de desenvolvimento).
+>
+> **Autenticação (16/10, ADR-018):** o REST passa pela própria Vercel (`/api/v1/*` repassado à API) para o cookie de sessão ser first-party. Antes do próximo deploy, siga a seção **"Publicar a autenticação"** abaixo — a ordem importa.
 
 ## Topologia proposta (ADR-009 — proposta, aguardando decisão de custo/região)
 
@@ -16,8 +18,13 @@ Região da API: a Binance pública (`data-api.binance.vision`) responde de AWS T
 
 | Variável | Onde | Produção |
 |---|---|---|
-| `NEXT_PUBLIC_CLARITAS_API_URL` / `NEXT_PUBLIC_CLARITAS_WS_URL` | Vercel (build) | `https://api.<domínio>` / `wss://api.<domínio>/api/v1/market/stream` |
-| `CORS_ORIGIN` | API | domínio exato do frontend (nunca `*`); também valida o `Origin` do WebSocket |
+| `CLARITAS_API_URL` | Vercel (build; **não** é pública) | URL da API para o repasse `/api/v1/*`, ex.: `https://<api>.onrender.com`. Aceita também a antiga `NEXT_PUBLIC_CLARITAS_API_URL` como fallback |
+| `NEXT_PUBLIC_CLARITAS_WS_URL` | Vercel (build) | `wss://<api>.onrender.com/api/v1/market/stream` (o WS vai direto à API, com ticket) |
+| `CORS_ORIGIN` | API | domínio exato do frontend (nunca `*`); valida o `Origin` do WebSocket e recusa escritas (`403`) de outras origens |
+| `SESSION_TTL_DAYS` | API | duração da sessão de login (padrão 30) |
+| `SESSION_COOKIE_SECURE` | API | padrão: ligado quando `NODE_ENV=production` |
+| `AUTH_RATE_LIMIT_PER_MINUTE` | API | por IP em entrar/criar conta (padrão 20) |
+| `TRUST_PROXY` | API | saltos de proxy confiáveis para o IP do cliente (padrão `false`). No Render atrás da Vercel: `2` (balanceador do Render + repasse da Vercel) — **conferir nos logs** (`remoteAddress`) após o deploy |
 | `DATABASE_URL` | API | connection string Neon (`sslmode=require`) — segredo |
 | `API_RATE_LIMIT_PER_MINUTE` | API | 600 por IP (ajustar ao tráfego) |
 | `LOG_LEVEL` | API | `info` |
@@ -29,11 +36,21 @@ TLS: Vercel e Render terminam TLS; a API escuta HTTP interno (`API_HOST=0.0.0.0`
 1. **Banco:** as migrações já estão aplicadas no Neon. Em mudanças futuras de schema, rodar `npm run db:migrate` localmente (o plano free do Render não tem `preDeployCommand`).
 2. **GitHub:** um repositório só com o monorepo inteiro (`.env` fica fora pelo `.gitignore`).
 3. **API no Render:** *New → Blueprint* apontando para o repositório (lê `render.yaml`) e preencher `DATABASE_URL` e `CORS_ORIGIN`. A API usa a variável `PORT` do Render quando `API_PORT` não está definido. Conferir `https://<api>.onrender.com/health` e `/ready`.
-4. **Web na Vercel:** importar o mesmo repositório (Root Directory = raiz, preset Next.js) com `NEXT_PUBLIC_CLARITAS_API_URL=https://<api>.onrender.com` e `NEXT_PUBLIC_CLARITAS_WS_URL=wss://<api>.onrender.com/api/v1/market/stream`. São embutidas no build: alterou, refaça o deploy.
+4. **Web na Vercel:** importar o mesmo repositório (Root Directory = raiz, preset Next.js) com `CLARITAS_API_URL=https://<api>.onrender.com` e `NEXT_PUBLIC_CLARITAS_WS_URL=wss://<api>.onrender.com/api/v1/market/stream`. São lidas no build: alterou, refaça o deploy.
 5. **Fechar o CORS:** `CORS_ORIGIN` no Render = URL exata da Vercel (sem barra final). Domínios de preview da Vercel ficam bloqueados, a menos que sejam adicionados à lista (separada por vírgula).
 6. **Limitação do free:** a API dorme após 15 min sem tráfego; o primeiro acesso depois disso leva cerca de 1 min e a interface mostra o feed reconectando até ela acordar.
 
+## Publicar a autenticação (uma vez)
+
+1. **Neon:** criar um branch de segurança do banco atual (backup instantâneo).
+2. **Migração:** localmente, `npm run db:migrate` (aplica `20261016120000_auth`, aditiva) e `npm run db:seed` (lista modelo). Não use `migrate reset`/`migrate dev`.
+3. **API (Render):** publicar o commit. A API antiga não deve continuar rodando contra o schema novo. Conferir `/ready` e que `GET /api/v1/market/assets` sem cookie responde `401`.
+4. **Web (Vercel):** adicionar `CLARITAS_API_URL` (pode remover `NEXT_PUBLIC_CLARITAS_API_URL`) e publicar. Conferir que `/` redireciona para `/entrar`, criar uma conta e ver o pregão ao vivo.
+5. **`TRUST_PROXY`:** com o `render.yaml` atual vale `2`. Nos logs da API, o `remoteAddress` das requisições deve ser o IP do visitante, não o da Vercel/Render; se não for, ajuste — sem isso, o limite por IP vira um balde único para todos.
+
 ## Segurança e robustez já implementadas
+
+- **Login obrigatório (ADR-018):** sessão opaca em cookie `HttpOnly`/`SameSite=Lax`/`Secure`, hash SHA-256 no banco, senha com scrypt, limite próprio nas rotas de senha + 10 falhas por e-mail/15 min, WebSocket só com ticket de uso único, `403` para escrita de outra origem. Ver `docs/API_CONTRACT.md` → Autenticação.
 
 - CORS por lista (`CORS_ORIGIN`) no REST e validação de `Origin` no handshake WebSocket.
 - Rate limit por IP (REST, `@fastify/rate-limit`) → `429 RATE_LIMITED` com `Retry-After`; WebSocket: máx. 20 msg/s, 4 KB por mensagem, `STREAM_MAX_SUBSCRIPTIONS_PER_CLIENT`, heartbeat 30 s.
@@ -59,7 +76,8 @@ Reavaliar a cada atualização do Prisma 7.x e do Next 16.x.
 
 | Item | Bloqueio | Como concluir |
 |---|---|---|
-| Deploy público (web + API) | Executado pelo responsável | Seguir o passo a passo acima |
+| Deploy público (web + API) | Executado pelo responsável | Seguir o passo a passo acima e "Publicar a autenticação" |
+| Recuperação de senha / verificação de e-mail | Exige serviço de e-mail transacional | Escolher provedor e registrar ADR |
 | Validar a imagem Docker | Sem Docker no ambiente | `docker build` + `docker run -p 4000:4000 --env-file .env claritas-api` |
 | CSP com nonce no Next | Requer middleware de nonce e revisão dos scripts inline do Next 16 | Implementar via `proxy`/middleware conforme `node_modules/next/dist/docs` |
 | Termos de uso/redistribuição de dados Binance | Revisão jurídica/comercial | Revisar os Termos da Binance antes de abrir a terceiros |

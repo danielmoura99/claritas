@@ -2,9 +2,9 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Claritas Terminal
 
-Terminal de análise gráfica com **dados reais da Binance Spot** (REST histórico + WebSocket ao vivo), no visual do design system Claritas. Três telas: **Pregão ao vivo** (`/`), **Scanner** (`/scanner`) e **Resumo do período** (`/relatorio`).
+Terminal de análise gráfica com **dados reais da Binance Spot** (REST histórico + WebSocket ao vivo), no visual do design system Claritas. Três telas: **Pregão ao vivo** (`/`), **Scanner** (`/scanner`) e **Resumo do período** (`/relatorio`), atrás de **login obrigatório** (`/entrar`: entrar ou criar conta; watchlist e preferências por usuário — ADR-018).
 
-**Arquitetura:** Next.js 16 na raiz (frontend) → **API Claritas** independente (Node 24 + Fastify 5, `services/api`) → Binance Spot pública. Contratos Zod compartilhados em `packages/contracts`. Persistência (watchlist, preferências) em PostgreSQL (Neon) via Prisma 7. O navegador só fala com a API Claritas.
+**Arquitetura:** Next.js 16 na raiz (frontend) → **API Claritas** independente (Node 24 + Fastify 5, `services/api`) → Binance Spot pública. Contratos Zod compartilhados em `packages/contracts`. Persistência (contas, sessões, watchlist, preferências) em PostgreSQL (Neon) via Prisma 7. O navegador só fala com a API Claritas: o REST pela própria origem do frontend (`/api/v1/*` repassado pelo Next, cookie de sessão first-party) e o WebSocket direto, com ticket de sessão.
 
 ### Como executar
 
@@ -16,6 +16,10 @@ npm run db:seed             # watchlist default (opcional)
 npm run dev                 # web (localhost:3000) + API (localhost:4000) juntos
 ```
 
+Abra `http://localhost:3000`: sem sessão, a tela de entrada pede login ou a criação de uma conta.
+
+> Para testar o login sem tocar no Neon: `npm run db:local:start` e `node scripts/e2e-db.mjs --api` (API apontando para o banco local `claritas_e2e`) com `npm run dev:web` em outro terminal.
+
 Produção local: `npm run build && npm run start` (web) e `npm run start:api` (API).
 
 ### Qualidade
@@ -26,7 +30,7 @@ Produção local: `npm run build && npm run start` (web) e `npm run start:api` (
 | `npm test` | Unitários (contratos, API, frontend) — offline |
 | `npm run test:integration` | Integração contra a **Binance real** (rede) |
 | `npm run test:db` | Persistência em PostgreSQL **local descartável** (`npm run db:local:start`); nunca toca o `DATABASE_URL` |
-| `npm run test:e2e` | Playwright: `live` (pilha real) e `visual` (regressão visual com dados congelados só nos testes) |
+| `npm run test:e2e` | Playwright: `setup` (conta E2E), `live` (pilha real, autenticada; exige `npm run db:local:start` e **não** reaproveita uma API ligada ao Neon) e `visual` (regressão visual com dados congelados só nos testes) |
 
 ### Documentação
 
