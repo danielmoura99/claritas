@@ -216,8 +216,10 @@ describe("Etapas 3 e 5 — entitlements e assinaturas manuais", () => {
     const results = await Promise.all(Array.from({ length: 10 }, (_, i) => svc.consume(u.id, "scanner.scan", `chave-${i}`)));
     expect(results.filter((r) => r.allowed)).toHaveLength(3);
     expect(results.filter((r) => !r.allowed).every((r) => r.reason === "QUOTA_EXCEEDED")).toBe(true);
-    const again = await svc.consume(u.id, "scanner.scan", "chave-0");
-    expect(again.allowed).toBe(true); // mesma chave já contada: não consome nem nega
+    // Retentativa de uma operação que CONSEGUIU consumir: aceita sem recontar (as negadas não deixaram registro).
+    const okKey = `chave-${results.findIndex((r) => r.allowed)}`;
+    const again = await svc.consume(u.id, "scanner.scan", okKey);
+    expect(again.allowed).toBe(true);
     expect((await db.require().usageCounter.findFirstOrThrow({ where: { userId: u.id } })).used).toBe(3);
     expect((await access(u.cookie)).features["scanner.scan"]).toMatchObject({ allowed: false, reason: "QUOTA_EXCEEDED", remaining: 0 });
   });

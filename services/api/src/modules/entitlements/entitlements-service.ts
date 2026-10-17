@@ -137,7 +137,8 @@ export class EntitlementsService implements AccessPolicy {
   /**
    * Consumo atômico (D-S08): numa transação, registra a chave de idempotência (repetida = já contada, não conta
    * de novo) e incrementa o contador SÓ se `used < limit` — um único UPSERT condicional, seguro entre requisições
-   * e instâncias concorrentes. Esgotado → desfaz a transação inteira e nega.
+   * e instâncias concorrentes. Esgotado → desfaz a transação inteira e nega. Tabelas qualificadas com `public.`:
+   * no pooler do Neon (PgBouncer em modo transação) uma conexão pode herdar `search_path` vazio de outra sessão.
    */
   async consume(userId: string, key: FeatureKey, idempotencyKey: string): Promise<AccessDecision> {
     const ctx = await this.context(userId);
@@ -160,7 +161,7 @@ export class EntitlementsService implements AccessPolicy {
       const used = await this.db.run((p) =>
         p.$transaction(async (tx) => {
           const fresh = await tx.$queryRaw<{ ok: number }[]>`
-            INSERT INTO "UsageRecord" ("userId", "featureKey", "idempotencyKey", "windowStart")
+            INSERT INTO public."UsageRecord" ("userId", "featureKey", "idempotencyKey", "windowStart")
             VALUES (${userId}, ${key}, ${idempotencyKey}, ${win.start})
             ON CONFLICT DO NOTHING RETURNING 1 AS ok`;
           if (fresh.length === 0) {
@@ -169,7 +170,7 @@ export class EntitlementsService implements AccessPolicy {
             return row?.used ?? 0;
           }
           const rows = await tx.$queryRaw<{ used: number }[]>`
-            INSERT INTO "UsageCounter" ("userId", "featureKey", "windowStart", "used", "updatedAt")
+            INSERT INTO public."UsageCounter" ("userId", "featureKey", "windowStart", "used", "updatedAt")
             VALUES (${userId}, ${key}, ${win.start}, 1, now())
             ON CONFLICT ("userId", "featureKey", "windowStart")
             DO UPDATE SET "used" = "UsageCounter"."used" + 1, "updatedAt" = now()
