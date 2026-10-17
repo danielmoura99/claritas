@@ -37,7 +37,7 @@
 | Transparência (art. 9º) | Política com dados, finalidades, compartilhamento, retenção e direitos | ⚖ preencher controlador e encarregado |
 | Encarregado/DPO (art. 41) | placeholder | ⚖ nomear (a ANPD dispensa agentes de pequeno porte em certas condições — Resolução CD/ANPD nº 2/2022; confirmar enquadramento) e publicar o canal |
 | Direitos do titular (art. 18) | acesso/portabilidade pela própria conta; demais pelo encarregado em até 15 dias | 🛠 exclusão/anonimização de conta ainda é manual (pelo suporte) — automatizar |
-| Operadores e transferência internacional (art. 33) | Neon (banco), Render (Frankfurt), Vercel | ⚖ confirmar região do Neon e anexar DPA/cláusulas de cada provedor; atualizar a Política |
+| Operadores e transferência internacional (art. 33) | Neon (AWS us-east-2, EUA — confirmado em 17/10), Render (Frankfurt), Vercel (rede global) — já na Política | ⚖ anexar DPA/cláusulas de cada provedor |
 | Registros de acesso (Marco Civil art. 15) | logs da API com IP e requisição (Render) | 🛠 garantir retenção mínima de 6 meses (o plano free do Render não guarda isso — exportar logs para armazenamento próprio) |
 | Segurança (art. 46) e incidentes (art. 48) | hash scrypt, sessões revogáveis, HTTPS, RBAC, auditoria imutável | 🛠 plano de resposta a incidentes e contato com a ANPD; MFA para admins |
 | Registro das operações (art. 37) | — | ⚖ criar o inventário (ROPA) a partir da seção 2 da Política |

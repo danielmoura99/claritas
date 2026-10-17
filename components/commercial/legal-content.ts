@@ -114,7 +114,7 @@ export const PRIVACY: LegalDocument = {
     {
       title: "4. Com quem compartilhamos",
       paragraphs: [
-        "Com operadores que hospedam e executam o serviço, apenas no necessário: banco de dados gerenciado (Neon), servidor da API (Render, região Frankfurt, Alemanha) e hospedagem da interface (Vercel). Alguns desses provedores processam dados fora do Brasil; a transferência internacional se apoia nas garantias contratuais desses provedores (LGPD, art. 33). [Confirmar regiões e cláusulas com cada provedor.]",
+        "Com operadores que hospedam e executam o serviço, apenas no necessário: banco de dados gerenciado (Neon, na AWS em Ohio, Estados Unidos), servidor da API (Render, em Frankfurt, Alemanha) e hospedagem da interface (Vercel, rede global). Esses provedores processam dados fora do Brasil; a transferência internacional se apoia nas garantias contratuais desses provedores (LGPD, art. 33). [Anexar as cláusulas/DPA de cada provedor.]",
         "Com autoridades, quando houver obrigação legal ou ordem judicial.",
       ],
     },
