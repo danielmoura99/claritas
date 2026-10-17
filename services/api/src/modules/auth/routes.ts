@@ -25,7 +25,7 @@ export async function authRoutes(
     sessionTtlMs,
     rateLimitPerMinute,
     onSignup,
-  }: { auth: AuthService; tickets: StreamTickets; throttle: LoginThrottle; cookieSecure: boolean; sessionTtlMs: number; rateLimitPerMinute: number; onSignup?: (userId: string) => void },
+  }: { auth: AuthService; tickets: StreamTickets; throttle: LoginThrottle; cookieSecure: boolean; sessionTtlMs: number; rateLimitPerMinute: number; onSignup?: (userId: string, trialUntil: Date | null) => void },
 ) {
   // Limite próprio, bem mais baixo que o geral, nas rotas que recebem senha.
   const strict = { config: { rateLimit: { max: rateLimitPerMinute, timeWindow: "1 minute" } } };
@@ -38,10 +38,10 @@ export async function authRoutes(
 
   app.post("/register", strict, async (req, reply) => {
     const input = parseOrThrow(RegisterRequestSchema, req.body ?? {});
-    const { token, ...ctx } = await auth.register(input);
+    const { token, trialUntil, ...ctx } = await auth.register(input);
     setCookie(reply, token);
-    req.log.info({ userId: ctx.user.id }, "conta criada");
-    onSignup?.(ctx.user.id);
+    req.log.info({ userId: ctx.user.id, trial: Boolean(trialUntil) }, "conta criada");
+    onSignup?.(ctx.user.id, trialUntil);
     return reply.status(201).send({ data: toSession(ctx) });
   });
 

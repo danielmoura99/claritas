@@ -308,3 +308,44 @@ describe("Etapa 10 — auditoria, streams e indicadores", () => {
     expect((await api(admin.cookie, { url: "/api/v1/admin/integrations/payments" })).json().data).toMatchObject({ status: "DEFERRED", events: [] });
   });
 });
+
+describe("Degustação de 7 dias no cadastro (decisão de 17/10/2026)", () => {
+  it("conta nova recebe teste automático do plano configurado, auditado, que expira sozinho", async () => {
+    const plan = await api(admin.cookie, { method: "POST", url: "/api/v1/admin/plans", payload: { code: "degustacao", name: "Degustação", features: [{ key: "terminal.access", enabled: true, limit: null }, { key: "scanner.access", enabled: true, limit: null }, { key: "scanner.scan", enabled: true, limit: 5 }] } });
+    await api(admin.cookie, { method: "POST", url: `/api/v1/admin/plans/${plan.json().data.id}/publish`, payload: { reason: "plano usado na degustação" } });
+    const env = parseEnv({ SIGNUP_TRIAL_PLAN_CODE: "degustacao", SIGNUP_TRIAL_DAYS: "7", AUTH_RATE_LIMIT_PER_MINUTE: "1000", SUBSCRIPTION_EXPIRY_JOB_MINUTES: "0" });
+    const provider = new BinanceSpotProvider({ restUrl: "https://binance.test", timeoutMs: 500, fetchImpl, now: () => T0 + 10 * FIVE_MIN });
+    const trialApp = await buildApp({ env, logger: false, provider, streamSource: new FakeStreamSource(), database: db, now: () => clock });
+    try {
+      const res = await trialApp.inject({ method: "POST", url: "/api/v1/auth/register", payload: { name: "Degusta", email: "degusta@claritas.test", password: "senha-forte-123", acceptTerms: true } });
+      expect(res.statusCode, res.body).toBe(201);
+      const cookie = `${SESSION_COOKIE}=${String(res.headers["set-cookie"]).match(new RegExp(`${SESSION_COOKIE}=([^;]+)`))![1]}`;
+      const a = (await trialApp.inject({ url: "/api/v1/me/access", headers: { cookie } })).json().data;
+      expect(a.state).toBe("TRIALING");
+      expect(a.subscription).toMatchObject({ planCode: "degustacao", status: "TRIALING", source: "MANUAL" });
+      const days = (Date.parse(a.subscription.accessUntil) - clock) / 86_400_000;
+      expect(days).toBeGreaterThan(6.99);
+      expect(days).toBeLessThanOrEqual(7);
+      expect(a.features["scanner.scan"]).toMatchObject({ allowed: true, limit: 5 });
+      expect((await trialApp.inject({ url: "/api/v1/market/quote?symbol=TESTUSDT", headers: { cookie } })).statusCode).toBe(200);
+      const sub = await db.require().subscription.findFirstOrThrow({ where: { user: { email: "degusta@claritas.test" } } });
+      expect(await db.require().adminAuditLog.count({ where: { targetId: sub.id, action: "subscription.created_trial", actorLabel: "sistema:cadastro" } })).toBe(1);
+      const start = clock;
+      try {
+        clock = start + 7 * D + 1;
+        expect((await trialApp.inject({ url: "/api/v1/market/quote?symbol=TESTUSDT", headers: { cookie } })).statusCode).toBe(403);
+        expect((await trialApp.inject({ url: "/api/v1/me/access", headers: { cookie } })).json().data.state).toBe("TRIAL_EXPIRED");
+      } finally {
+        clock = start;
+      }
+    } finally {
+      await trialApp.close();
+    }
+  });
+
+  it("sem o plano do teste publicado, o cadastro funciona e a conta fica sem acesso (nunca quebra)", async () => {
+    // A app principal usa o padrão "pro-mensal", que não existe neste banco de teste.
+    const u = await signup("Sem plano de teste", "semteste@claritas.test");
+    expect((await access(u.cookie)).state).toBe("NONE");
+  });
+});

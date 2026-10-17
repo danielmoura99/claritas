@@ -2,8 +2,8 @@ import { Panel } from "@/design-system";
 import { SUPPORT_EMAIL } from "@/lib/auth/access-copy";
 
 const FAQ: { q: string; a: string }[] = [
-  { q: "Como consigo acesso ao terminal?", a: "Crie sua conta em Entrar. Nesta fase, a equipe Claritas libera o acesso manualmente — por período de teste ou plano combinado. Até lá, a conta existe mas as telas de mercado ficam bloqueadas." },
-  { q: "O teste vira cobrança no fim?", a: "Não. O Claritas ainda não processa pagamentos: o acesso termina na data combinada, sem renovação nem cobrança automática." },
+  { q: "Como consigo acesso ao terminal?", a: "Crie sua conta em Entrar: toda conta nova ganha 7 dias de teste do plano Pro (Pregão ao vivo, Scanner e Resumo do período), sem cobrança e sem cartão. Depois disso, fale com a equipe para continuar." },
+  { q: "O teste vira cobrança no fim?", a: "Não. O Claritas ainda não processa pagamentos: o teste termina sozinho no 7º dia, sem renovação nem cobrança automática. Sua watchlist e preferências continuam salvas." },
   { q: "Como cancelo ou mudo de plano?", a: "Fale com o suporte. O acesso pode ser encerrado antes do prazo ou trocado por outro plano; sua watchlist e preferências ficam salvas." },
   { q: "O que é uma cortesia?", a: "Um acesso gratuito concedido pela equipe, com prazo definido. Ele aparece como cortesia em Minha conta — não é pagamento." },
   { q: "Atingi o limite de varreduras do Scanner. E agora?", a: "Os limites do Scanner são diários e voltam à meia-noite UTC (21h em Brasília). Para ampliar, fale com o suporte." },

@@ -54,6 +54,10 @@ const EnvSchema = z.object({
   ADMIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(5).max(10_000).default(120),
   /** Intervalo do job que normaliza assinaturas vencidas (0 = desligado; o acesso é negado pelo relógio de qualquer jeito). */
   SUBSCRIPTION_EXPIRY_JOB_MINUTES: z.coerce.number().int().min(0).max(1_440).default(60),
+  /** Degustação automática no cadastro (decisão do responsável, 17/10/2026): dias de teste (0 = desligada). */
+  SIGNUP_TRIAL_DAYS: z.coerce.number().int().min(0).max(90).default(7),
+  /** Código do plano PUBLICADO usado no teste do cadastro (a versão publicada mais recente). */
+  SIGNUP_TRIAL_PLAN_CODE: z.string().regex(/^[a-z][a-z0-9-]{1,30}$/).default("pro-mensal"),
   /**
    * Proxies confiáveis à frente da API (repasse do frontend + balanceador do host), para o IP do cliente
    * vir de X-Forwarded-For: "false" (padrão), "true" ou o número de saltos. Ver docs/DEPLOY.md.

@@ -1,6 +1,8 @@
 import { LEGAL_VERSIONS, SHORT_SESSION_HOURS, type AuthUser, type LoginRequest, type RegisterRequest } from "@claritas/contracts";
 import type { Database } from "../../infrastructure/db";
 import { AppError } from "../../infrastructure/errors";
+import { audit } from "../audit/audit";
+import { snapshotOf } from "../plans/plan-service";
 import { dummyHash, hashPassword, verifyPassword } from "./password";
 import { hashSessionToken, newSessionToken } from "./session-cookie";
 
@@ -29,14 +31,21 @@ const TOUCH_EVERY_MS = 60 * 60_000;
 export class AuthService implements SessionVerifier {
   constructor(
     private readonly db: Database,
-    private readonly opts: { sessionTtlMs: number; now?: () => number },
+    private readonly opts: {
+      sessionTtlMs: number;
+      now?: () => number;
+      /** Teste automático no cadastro (decisão do responsável, 17/10/2026). Ausente ou `days=0` = sem teste. */
+      signupTrial?: { planCode: string; days: number };
+      /** Avisos operacionais (ex.: plano do teste não publicado). */
+      onWarning?: (msg: string, data?: object) => void;
+    },
   ) {}
 
   private now() {
     return this.opts.now?.() ?? Date.now();
   }
 
-  async register(input: RegisterRequest): Promise<AuthContext & { token: string }> {
+  async register(input: RegisterRequest): Promise<AuthContext & { token: string; trialUntil: Date | null }> {
     const passwordHash = await hashPassword(input.password);
     try {
       // Conta + registro do aceite (versões vigentes) na mesma transação: sem aceite, sem conta.
@@ -49,10 +58,27 @@ export class AuthService implements SessionVerifier {
               { userId: u.id, documentType: "PRIVACY", documentVersion: LEGAL_VERSIONS.privacy, source: "register" },
             ],
           });
-          return u;
+          // Degustação: teste do plano configurado (versão PUBLICADA mais recente), sem cobrança, com fim explícito.
+          // Sem plano publicado → conta criada sem teste (nunca quebra o cadastro) e aviso operacional.
+          let trialUntil: Date | null = null;
+          const t = this.opts.signupTrial;
+          if (t && t.days > 0) {
+            const plan = await tx.plan.findFirst({ where: { code: t.planCode, status: "PUBLISHED" }, orderBy: { version: "desc" }, include: { features: { include: { feature: { select: { key: true } } } } } });
+            if (plan) {
+              const now = this.now();
+              trialUntil = new Date(now + t.days * 86_400_000);
+              const sub = await tx.subscription.create({
+                data: { userId: u.id, planId: plan.id, status: "TRIALING", source: "MANUAL", startsAt: new Date(now), accessUntil: trialUntil, entitlementSnapshot: snapshotOf(plan), reason: `teste automático de ${t.days} dias no cadastro` },
+              });
+              await audit(tx, { id: null, label: "sistema:cadastro" }, { action: "subscription.created_trial", targetType: "Subscription", targetId: sub.id, reason: `teste automático de ${t.days} dias no cadastro`, after: { userId: u.id, planCode: plan.code, planVersion: plan.version, status: "TRIALING", accessUntil: trialUntil.toISOString() } });
+            } else {
+              this.opts.onWarning?.("plano do teste automático não está publicado — conta criada sem teste", { planCode: t.planCode });
+            }
+          }
+          return { ...u, trialUntil };
         }),
       );
-      return { ...(await this.openSession(user.id)), user: toUser(user) };
+      return { ...(await this.openSession(user.id)), user: toUser(user), trialUntil: user.trialUntil };
     } catch (err) {
       if ((err as { code?: string }).code === "P2002") throw new AppError("EMAIL_TAKEN", "Já existe uma conta com este e-mail");
       throw err;

@@ -13,6 +13,10 @@ Toda operação abaixo é auditada. **Nunca edite o banco à mão** para mudar a
 4. **Deny-by-default:** sem concessão, ninguém usa o terminal — inclusive o admin. Entre em `/admin/usuarios/<você>` → "Conceder acesso" (ex.: plano Pro, acesso manual, 365 dias) e repita para quem já usava o produto.
 5. Deploy da API e depois da web (ordem de `docs/DEPLOY.md`).
 
+## Degustação automática
+
+Toda conta nova recebe teste de `SIGNUP_TRIAL_DAYS` (7) dias do plano publicado `SIGNUP_TRIAL_PLAN_CODE` (`pro-mensal`), auditado como `sistema:cadastro`. Se esse plano for arquivado sem uma nova versão publicada, contas novas ficam sem teste (aviso no log da API). Para desligar: `SIGNUP_TRIAL_DAYS=0`. Risco conhecido: a mesma pessoa pode repetir o teste com outro e-mail — acompanhe em `/admin` e suspenda abusos.
+
 ## Conceder acesso a um cliente
 
 `/admin/usuarios` → buscar → abrir → **Conceder acesso**: plano, modalidade (Teste / Acesso manual / Cortesia), duração, motivo. Termina sozinho no fim do prazo (o servidor nega pelo relógio). Trocar de plano: marque "Substituir a assinatura atual".

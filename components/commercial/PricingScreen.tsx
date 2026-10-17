@@ -40,7 +40,7 @@ export function PricingScreen() {
           Escolha o quanto do mercado você quer <em>ler</em>.
         </h1>
         <p className="m-0 text-fg-secondary">
-          Nesta fase os acessos são liberados pela equipe Claritas, por período definido. Não há cobrança automática nem checkout: fale conosco para combinar teste ou plano.
+          Toda conta nova começa com 7 dias de teste do Pro, sem cobrança e sem cartão. Depois, os planos são combinados com a equipe Claritas: ainda não há cobrança automática nem checkout.
         </p>
       </header>
 

@@ -96,7 +96,12 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
   const db = database ?? new Database(env.DATABASE_URL);
   app.addHook("onClose", async () => db.close());
   const sessionTtlMs = env.SESSION_TTL_DAYS * 86_400_000;
-  const auth = new AuthService(db, { sessionTtlMs, now });
+  const auth = new AuthService(db, {
+    sessionTtlMs,
+    now,
+    signupTrial: env.SIGNUP_TRIAL_DAYS > 0 ? { planCode: env.SIGNUP_TRIAL_PLAN_CODE, days: env.SIGNUP_TRIAL_DAYS } : undefined,
+    onWarning: (msg, data) => app.log.warn(data ?? {}, msg),
+  });
   const tickets = new StreamTickets(now);
   // Plano 02: motor central de acesso (deny-by-default) + eventos de revogação imediata.
   const entitlements = new EntitlementsService(db, { now });
@@ -157,7 +162,10 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
     cookieSecure: env.SESSION_COOKIE_SECURE ?? env.NODE_ENV === "production",
     sessionTtlMs,
     rateLimitPerMinute: env.AUTH_RATE_LIMIT_PER_MINUTE,
-    onSignup: (userId) => productEvents.record("signup_completed", userId),
+    onSignup: (userId, trialUntil) => {
+      productEvents.record("signup_completed", userId);
+      if (trialUntil) productEvents.record("trial_started", userId, { source: "signup" });
+    },
   });
   await app.register(meRoutes, { prefix: "/api/v1/me", access, db, events: productEvents });
   await app.register(publicPlanRoutes, { prefix: "/api/v1/plans", plans });

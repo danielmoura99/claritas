@@ -21,7 +21,7 @@ type Notice = { tone: "error" | "info"; text: string };
 
 const COPY: Record<Step, { eyebrow: string; title: string; body: string; submit: string }> = {
   entrar: { eyebrow: "Acesso", title: "Entre no seu terminal.", body: "O pregão já está sendo lido. Sua mesa abre exatamente onde você parou.", submit: "Entrar" },
-  criar: { eyebrow: "Nova conta", title: "Crie seu acesso.", body: "Watchlist e preferências ficam salvas na sua conta e voltam em qualquer navegador.", submit: "Criar conta e entrar" },
+  criar: { eyebrow: "Nova conta", title: "Crie seu acesso.", body: "Use o terminal completo por 7 dias, sem cobrança e sem cartão. Watchlist e preferências ficam salvas na sua conta.", submit: "Criar conta e entrar" },
 };
 
 /** Recursos do kit ainda sem backend: a tela informa em vez de simular. */

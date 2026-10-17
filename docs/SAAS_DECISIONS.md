@@ -11,6 +11,7 @@ Formato: decisão → justificativa → data. Decisões comerciais pendentes do 
 | R-03 | Promover usuário a ADMIN, publicar a aplicação e alterar serviços externos exigem autorização explícita (fora do escopo autônomo). | 17/10/2026 |
 | R-04 | Autorizado: migrar o Neon, promover a conta "Daniel Moura" a ADMIN, conceder-lhe acesso e publicar (deploy). | 17/10/2026 |
 | R-05 | Planos de **teste**: Pro Mensal R$ 299, Pro Semestral e Pro Anual. Valores de semestral (R$ 1.614, −10%) e anual (R$ 2.870, −20%) definidos pelo agente a partir do mensal; mesmas funcionalidades do Pro. | 17/10/2026 |
+| R-07 | **Degustação:** toda conta nova recebe 7 dias de teste automático no cadastro (plano `pro-mensal` publicado; `SIGNUP_TRIAL_DAYS`/`SIGNUP_TRIAL_PLAN_CODE`). Substitui, para contas novas, a liberação manual de D-S06. | 17/10/2026 |
 | R-06 | Revisar Termos, LGPD e fiscal agora (`docs/LEGAL_REVIEW.md`); licença dos dados da Binance fica para depois (a fonte vai mudar). | 17/10/2026 |
 
 ## Decisões técnicas (agente, baixo risco)

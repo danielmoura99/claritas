@@ -34,7 +34,7 @@ export function gateCopy(gate: GateState, feature: string): { eyebrow: string; t
     case "NO_ACCESS_YET":
       return { eyebrow: "Conta criada", title: "Sua conta está pronta; o acesso ainda não foi liberado.", body: "Nesta fase o Claritas libera o terminal manualmente — por período de teste ou plano combinado com a equipe. Fale com o suporte para ativar." };
     case "TRIAL_EXPIRED":
-      return { eyebrow: "Teste encerrado", title: "Seu período de teste terminou.", body: "Nada foi cobrado. Para continuar usando o terminal, fale com o suporte e combine um plano." };
+      return { eyebrow: "Teste encerrado", title: "Seus 7 dias de teste terminaram.", body: "Nada foi cobrado. Para continuar usando o terminal, veja os planos ou fale com o suporte." };
     case "ACCESS_EXPIRED":
       return { eyebrow: "Acesso encerrado", title: "O prazo do seu acesso terminou.", body: "Fale com o suporte para renovar. Sua watchlist e preferências continuam salvas." };
     case "ACCOUNT_SUSPENDED":

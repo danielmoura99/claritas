@@ -35,6 +35,12 @@ await client.end();
 const env = { ...process.env, DATABASE_URL: E2E_DATABASE_URL, PRISMA_HIDE_UPDATE_MESSAGE: "1" };
 execSync("npm run db:migrate", { cwd: ROOT, env, stdio: "pipe" });
 execSync("npm run db:seed", { cwd: ROOT, env, stdio: "pipe" });
+// Planos de teste publicados (o teste automático do cadastro usa "pro-mensal"); só na primeira vez.
+const check = new pg.Client({ connectionString: E2E_DATABASE_URL });
+await check.connect();
+const published = await check.query(`SELECT 1 FROM "Plan" WHERE code = 'pro-mensal' AND status = 'PUBLISHED'`);
+await check.end();
+if (published.rowCount === 0) execSync('npm run admin:ops -- plans --file scripts/plans/teste-2026-10.json --reason "planos do ambiente local de E2E"', { cwd: ROOT, env, stdio: "pipe" });
 console.log(`banco E2E pronto: ${url.host}/${dbName}`);
 
 if (process.argv.includes("--api")) {

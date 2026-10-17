@@ -47,6 +47,7 @@ export const TERMS: LegalDocument = {
       title: "4. Acesso, planos e preços",
       paragraphs: [
         "O acesso às funcionalidades depende do plano ou da concessão vigente na sua conta (por exemplo: período de teste, acesso manual ou cortesia), sempre com data de término informada em Minha conta.",
+        "Contas novas recebem um período de teste gratuito de 7 (sete) dias do plano indicado na página de Planos. O teste termina automaticamente, sem cobrança e sem conversão automática em plano pago. Podemos limitar o teste a uma conta por pessoa e encerrar testes obtidos por cadastros repetidos.",
         "Os preços, a periodicidade e o que cada plano inclui são exibidos na página de Planos antes da contratação. Funcionalidades ainda não existentes não são oferecidas.",
         "Fase atual: o Claritas ainda não processa pagamentos. Não há cobrança nem renovação automáticas; contratações são combinadas diretamente com a equipe. Quando a cobrança online for ativada, estes Termos serão atualizados e você será informado antes de qualquer cobrança.",
       ],

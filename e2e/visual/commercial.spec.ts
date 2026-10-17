@@ -125,7 +125,7 @@ test.describe("acesso negado (1440)", () => {
   test("teste encerrado tem mensagem própria", async ({ page }) => {
     const api = await useFrozenApi(page, { access: testAccess({ allowed: [], deniedReason: "SUBSCRIPTION_INACTIVE", state: "TRIAL_EXPIRED", subscription: { ...TRIAL_ESSENCIAL, accessUntil: new Date(Date.UTC(2026, 9, 1)).toISOString() } }) });
     await page.goto("/relatorio");
-    await expect(page.getByText("Seu período de teste terminou.")).toBeVisible();
+    await expect(page.getByText("Seus 7 dias de teste terminaram.")).toBeVisible();
     await expect(page.getByText("Nada foi cobrado.", { exact: false })).toBeVisible();
     await api.close();
   });
