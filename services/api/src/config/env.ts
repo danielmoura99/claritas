@@ -50,6 +50,10 @@ const EnvSchema = z.object({
   SESSION_COOKIE_SECURE: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   /** Requisições por IP por minuto nas rotas que recebem senha (entrar/criar conta). */
   AUTH_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(1_000).default(20),
+  /** Requisições por IP por minuto em cada rota administrativa (Plano 02 §4.6.8). */
+  ADMIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(5).max(10_000).default(120),
+  /** Intervalo do job que normaliza assinaturas vencidas (0 = desligado; o acesso é negado pelo relógio de qualquer jeito). */
+  SUBSCRIPTION_EXPIRY_JOB_MINUTES: z.coerce.number().int().min(0).max(1_440).default(60),
   /**
    * Proxies confiáveis à frente da API (repasse do frontend + balanceador do host), para o IP do cliente
    * vir de X-Forwarded-For: "false" (padrão), "true" ou o número de saltos. Ver docs/DEPLOY.md.

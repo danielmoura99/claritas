@@ -24,7 +24,15 @@ import { Database } from "./infrastructure/db";
 import { PreferenceRepository, WatchlistRepository } from "./modules/watchlist/repositories";
 import { persistenceRoutes } from "./modules/watchlist/routes";
 import { AuthService, type SessionVerifier } from "./modules/auth/auth-service";
-import { authRoutes, registerAuthGuard } from "./modules/auth/routes";
+import { authRoutes } from "./modules/auth/routes";
+import { registerAccessGuard } from "./modules/authorization/route-policy";
+import { AccessEvents, EntitlementsService, type AccessPolicy } from "./modules/entitlements/entitlements-service";
+import { ProductEvents } from "./modules/metrics/product-events";
+import { PlanService } from "./modules/plans/plan-service";
+import { SubscriptionService } from "./modules/subscriptions/subscription-service";
+import { AdminService } from "./modules/admin/admin-service";
+import { adminRoutes } from "./modules/admin/routes";
+import { meRoutes, publicPlanRoutes } from "./modules/me/routes";
 import { StreamTickets } from "./modules/auth/stream-tickets";
 import { LoginThrottle } from "./modules/auth/login-throttle";
 
@@ -38,10 +46,14 @@ export interface AppOptions {
   database?: Database;
   /** Verificação de sessão injetável (testes sem banco); padrão: sessões do banco. */
   sessions?: SessionVerifier;
+  /** Política de entitlements injetável (testes sem banco); padrão: EntitlementsService no banco. */
+  access?: AccessPolicy;
+  /** Relógio injetável (testes de expiração). */
+  now?: () => number;
 }
 
 /** Monta a instância Fastify (sem escutar porta) — usada pelo servidor e pelos testes via `inject`. */
-export async function buildApp({ env, logger, provider: injectedProvider, streamSource, database, sessions }: AppOptions): Promise<FastifyInstance> {
+export async function buildApp({ env, logger, provider: injectedProvider, streamSource, database, sessions, access: injectedAccess, now = Date.now }: AppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: logger ?? { level: env.LOG_LEVEL, redact: ["req.headers.authorization", "req.headers.cookie"] },
     genReqId: (req) => {
@@ -76,7 +88,7 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
       if (!origin || env.CORS_ORIGIN.includes(origin)) cb(null, true);
       else cb(null, false);
     },
-    methods: ["GET", "PUT", "POST", "DELETE"],
+    methods: ["GET", "PUT", "PATCH", "POST", "DELETE"],
     credentials: true,
   });
 
@@ -84,9 +96,18 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
   const db = database ?? new Database(env.DATABASE_URL);
   app.addHook("onClose", async () => db.close());
   const sessionTtlMs = env.SESSION_TTL_DAYS * 86_400_000;
-  const auth = new AuthService(db, { sessionTtlMs });
-  const tickets = new StreamTickets();
-  registerAuthGuard(app, { verifier: sessions ?? auth, tickets, allowedOrigins: env.CORS_ORIGIN });
+  const auth = new AuthService(db, { sessionTtlMs, now });
+  const tickets = new StreamTickets(now);
+  // Plano 02: motor central de acesso (deny-by-default) + eventos de revogação imediata.
+  const entitlements = new EntitlementsService(db, { now });
+  const access: AccessPolicy = injectedAccess ?? entitlements;
+  const accessEvents = new AccessEvents();
+  const productEvents = new ProductEvents(db, app.log.child({ module: "product-events" }));
+  const plans = new PlanService(db);
+  const subscriptions = new SubscriptionService(db, accessEvents, productEvents, now);
+  const admin = new AdminService(db, entitlements, subscriptions, accessEvents, now);
+  app.decorate("subscriptions", subscriptions);
+  registerAccessGuard(app, { verifier: sessions ?? auth, tickets, access, allowedOrigins: env.CORS_ORIGIN });
 
   app.setErrorHandler((err, req, reply) => {
     if (isAppError(err)) {
@@ -136,15 +157,19 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
     cookieSecure: env.SESSION_COOKIE_SECURE ?? env.NODE_ENV === "production",
     sessionTtlMs,
     rateLimitPerMinute: env.AUTH_RATE_LIMIT_PER_MINUTE,
+    onSignup: (userId) => productEvents.record("signup_completed", userId),
   });
+  await app.register(meRoutes, { prefix: "/api/v1/me", access, db, events: productEvents });
+  await app.register(publicPlanRoutes, { prefix: "/api/v1/plans", plans });
+  await app.register(adminRoutes, { prefix: "/api/v1/admin", admin, plans, subscriptions, rateLimitPerMinute: env.ADMIN_RATE_LIMIT_PER_MINUTE });
   await app.register(marketRoutes, { prefix: "/api/v1/market", market });
   const analysis = new AnalysisService(market);
   await app.register(analysisRoutes, { prefix: "/api/v1/analysis", analysis });
   const scanner = new ScannerService(market, env.SCANNER_CONCURRENCY);
-  await app.register(scannerRoutes, { prefix: "/api/v1/scanner", scanner });
+  await app.register(scannerRoutes, { prefix: "/api/v1/scanner", scanner, access, events: productEvents });
   const report = new ReportService(market);
   await app.register(reportRoutes, { prefix: "/api/v1/report", report });
-  await app.register(persistenceRoutes, { prefix: "/api/v1", watchlist: new WatchlistRepository(db), preferences: new PreferenceRepository(db), market });
+  await app.register(persistenceRoutes, { prefix: "/api/v1", watchlist: new WatchlistRepository(db), preferences: new PreferenceRepository(db), market, access });
 
   let clockOffsetMs = 0;
   const refreshClockOffset = async () => {
@@ -174,10 +199,20 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
     market,
     maxSubscriptionsPerClient: env.STREAM_MAX_SUBSCRIPTIONS_PER_CLIENT,
     allowedOrigins: env.CORS_ORIGIN,
+    stillAllowed: async (userId) => (await access.check(userId, "terminal.access")).allowed,
+    accessEvents,
   });
   let clockTimer: NodeJS.Timeout | undefined;
+  let expiryTimer: NodeJS.Timeout | undefined;
   app.addHook("onReady", async () => {
     hub.start();
+    // Normaliza assinaturas vencidas (D-S14). O acesso já é negado pelo relógio; o job só registra o fim.
+    if (db.configured && env.SUBSCRIPTION_EXPIRY_JOB_MINUTES > 0) {
+      const run = () => void subscriptions.expireDue().then((n) => n && app.log.info({ expired: n }, "assinaturas vencidas normalizadas")).catch((err) => app.log.warn({ err: String(err) }, "job de expiração falhou"));
+      run();
+      expiryTimer = setInterval(run, env.SUBSCRIPTION_EXPIRY_JOB_MINUTES * 60_000);
+      expiryTimer.unref();
+    }
     if (!streamSource) {
       void refreshClockOffset();
       clockTimer = setInterval(() => void refreshClockOffset(), 10 * 60_000);
@@ -185,6 +220,7 @@ export async function buildApp({ env, logger, provider: injectedProvider, stream
     }
   });
   app.addHook("onClose", async () => clearInterval(clockTimer));
+  app.addHook("onClose", async () => clearInterval(expiryTimer));
   app.addHook("onClose", async () => hub.stop());
 
   return app;
@@ -194,5 +230,6 @@ declare module "fastify" {
   interface FastifyInstance {
     market: MarketService;
     hub: StreamHub;
+    subscriptions: SubscriptionService;
   }
 }

@@ -6,4 +6,5 @@ export * from "./scanner";
 export * from "./report";
 export * from "./persistence";
 export * from "./auth";
+export * from "./commercial";
 export { z } from "zod";

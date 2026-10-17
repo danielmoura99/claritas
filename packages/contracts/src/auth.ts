@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RoleSchema, UserStatusSchema } from "./commercial";
 
 /** E-mail normalizado (minúsculas, sem espaços nas pontas) — é a identidade de login. */
 export const EmailSchema = z
@@ -41,6 +42,8 @@ export const AuthUserSchema = z.object({
   id: z.string(),
   email: z.string(),
   name: z.string(),
+  role: RoleSchema,
+  status: UserStatusSchema,
   createdAt: z.string(),
 });
 export type AuthUser = z.infer<typeof AuthUserSchema>;

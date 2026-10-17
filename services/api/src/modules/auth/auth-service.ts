@@ -14,7 +14,14 @@ export interface SessionVerifier {
   verify(token: string): Promise<AuthContext | null>;
 }
 
-const toUser = (u: { id: string; email: string; name: string; createdAt: Date }): AuthUser => ({ id: u.id, email: u.email, name: u.name, createdAt: u.createdAt.toISOString() });
+const toUser = (u: { id: string; email: string; name: string; role: AuthUser["role"]; status: AuthUser["status"]; createdAt: Date }): AuthUser => ({
+  id: u.id,
+  email: u.email,
+  name: u.name,
+  role: u.role,
+  status: u.status,
+  createdAt: u.createdAt.toISOString(),
+});
 
 /** `lastUsedAt` é atualizado no máximo uma vez por hora (evita uma escrita por requisição). */
 const TOUCH_EVERY_MS = 60 * 60_000;
@@ -45,6 +52,8 @@ export class AuthService implements SessionVerifier {
     const user = await this.db.run((p) => p.user.findUnique({ where: { email: input.email } }));
     const ok = await verifyPassword(input.password, user?.passwordHash ?? (await dummyHash()));
     if (!user || !ok) throw new AppError("INVALID_CREDENTIALS", "E-mail ou senha incorretos");
+    // Só depois da senha correta: o estado da conta não é revelado a quem não a conhece.
+    if (user.status !== "ACTIVE") throw new AppError("ACCOUNT_BLOCKED", "Conta suspensa ou desativada. Fale com o suporte.", { details: { status: user.status } });
     // Limpeza oportunista das sessões vencidas desta conta.
     await this.db.run((p) => p.session.deleteMany({ where: { userId: user.id, expiresAt: { lt: new Date(this.now()) } } }));
     const ttlMs = input.remember === false ? SHORT_SESSION_HOURS * 3_600_000 : this.opts.sessionTtlMs;

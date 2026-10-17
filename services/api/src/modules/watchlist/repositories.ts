@@ -1,5 +1,6 @@
 import type { Preference, PreferenceUpdate, Watchlist } from "@claritas/contracts";
 import type { Database } from "../../infrastructure/db";
+import { AppError } from "../../infrastructure/errors";
 
 /** Nome da lista sem dono que serve de modelo para contas novas (criada pelo seed). */
 export const TEMPLATE_WATCHLIST = "default";
@@ -47,13 +48,19 @@ export class WatchlistRepository {
     });
   }
 
-  /** Adiciona ao fim (idempotente). */
-  async add(userId: string, baseAsset: string, quoteAsset: string): Promise<Watchlist> {
+  /**
+   * Adiciona ao fim (idempotente), respeitando `maxItems`. Um lock de transação por lista serializa inclusões
+   * simultâneas: duas requisições nunca passam juntas do limite.
+   */
+  async add(userId: string, baseAsset: string, quoteAsset: string, maxItems = Number.POSITIVE_INFINITY): Promise<Watchlist> {
     const wl = await this.ensure(userId);
     await this.db.run((p) =>
       p.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${wl.id}))`;
         const exists = await tx.watchlistItem.findUnique({ where: { watchlistId_baseAsset_quoteAsset: { watchlistId: wl.id, baseAsset, quoteAsset } } });
         if (exists) return;
+        const count = await tx.watchlistItem.count({ where: { watchlistId: wl.id } });
+        if (count >= maxItems) throw new AppError("QUOTA_EXCEEDED", `Sua watchlist comporta até ${maxItems} ativos`, { details: { feature: "watchlist.max_assets", limit: maxItems } });
         const last = await tx.watchlistItem.aggregate({ where: { watchlistId: wl.id }, _max: { position: true } });
         await tx.watchlistItem.create({ data: { watchlistId: wl.id, baseAsset, quoteAsset, position: (last._max.position ?? -1) + 1 } });
         await tx.watchlist.update({ where: { id: wl.id }, data: { updatedAt: new Date() } });

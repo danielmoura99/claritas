@@ -6,7 +6,7 @@ import type { ServerMessage } from "@claritas/contracts";
 import { buildApp } from "../../src/app";
 import { parseEnv } from "../../src/config/env";
 import { BinanceStreamSource } from "../../src/providers/binance/stream-source";
-import { streamTicket, testSessions } from "../helpers/auth";
+import { streamTicket, testSessions, allowAllAccess } from "../helpers/auth";
 
 // Integração REAL: Binance WSS → hub → WebSocket Claritas. Rede necessária.
 let app: FastifyInstance;
@@ -16,7 +16,7 @@ let wsUrl: string;
 beforeAll(async () => {
   const env = parseEnv({ LOG_LEVEL: "silent", CORS_ORIGIN: "http://localhost:3000", STREAM_UPSTREAM_LINGER_MS: "0" });
   source = new BinanceStreamSource({ wsUrl: env.BINANCE_SPOT_WS_URL });
-  app = await buildApp({ env, logger: false, streamSource: source, sessions: testSessions });
+  app = await buildApp({ env, logger: false, streamSource: source, sessions: testSessions, access: allowAllAccess });
   await app.listen({ host: "127.0.0.1", port: 0 });
   wsUrl = `ws://127.0.0.1:${(app.server.address() as AddressInfo).port}/api/v1/market/stream`;
 });

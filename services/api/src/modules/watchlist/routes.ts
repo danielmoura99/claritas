@@ -4,13 +4,14 @@ import { PreferenceUpdateSchema, SymbolSchema } from "@claritas/contracts";
 import { AppError } from "../../infrastructure/errors";
 import { parseOrThrow } from "../../infrastructure/validation";
 import { authOf } from "../auth/routes";
+import type { AccessPolicy } from "../entitlements/entitlements-service";
 import type { MarketService } from "../market/market-service";
 import type { PreferenceRepository, WatchlistRepository } from "./repositories";
 
 /** Watchlist e preferências do usuário da sessão (o guarda de auth já validou a sessão). */
 export async function persistenceRoutes(
   app: FastifyInstance,
-  { watchlist, preferences, market }: { watchlist: WatchlistRepository; preferences: PreferenceRepository; market: MarketService },
+  { watchlist, preferences, market, access }: { watchlist: WatchlistRepository; preferences: PreferenceRepository; market: MarketService; access: AccessPolicy },
 ) {
   const SymbolParams = z.object({ symbol: SymbolSchema });
 
@@ -31,7 +32,10 @@ export async function persistenceRoutes(
     const userId = authOf(req).user.id;
     const { symbol } = parseOrThrow(SymbolParams, req.params);
     const i = await instrumentOf(symbol, true); // só ativos negociando entram
-    return { data: await watchlist.add(userId, i.baseAsset, i.quoteAsset) };
+    // Limite do plano/concessão (LIMIT). Sem decisão favorável, nada entra (deny-by-default).
+    const d = await access.check(userId, "watchlist.max_assets");
+    if (!d.allowed || d.limit === undefined) throw new AppError("ENTITLEMENT_REQUIRED", "Watchlist não incluída no seu acesso atual", { details: { feature: "watchlist.max_assets", reason: d.reason } });
+    return { data: await watchlist.add(userId, i.baseAsset, i.quoteAsset, d.limit) };
   });
 
   app.delete("/watchlist/items/:symbol", async (req) => {

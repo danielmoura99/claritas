@@ -11,17 +11,44 @@ datasource db {
 }
 
 /// Conta de acesso ao terminal (e-mail + senha). A senha é guardada só como hash scrypt.
+/// Papel na plataforma (Plano 02 §4.2). Papel não é plano: ADMIN não ganha features comerciais.
+enum Role {
+  USER
+  ADMIN
+}
+
+/// Estado da conta (Plano 02 §4.3). Qualquer valor diferente de ACTIVE nega terminal e admin.
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
 model User {
   id           String          @id @default(cuid())
   /// Sempre em minúsculas (normalizado pelo contrato).
   email        String          @unique
   name         String
   passwordHash String
+  /// Só muda pelo comando `npm run admin:promote` (nunca por rota/formulário).
+  role         Role            @default(USER)
+  status       UserStatus      @default(ACTIVE)
+  /// Motivo e momento da última mudança de estado (detalhe completo no AdminAuditLog).
+  statusReason String?
+  statusChangedAt DateTime?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   sessions     Session[]
   watchlist    Watchlist?
   preference   UserSettings?
+  subscriptions Subscription[]
+  featureOverrides FeatureOverride[]
+  usageCounters UsageCounter[]
+
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
 }
 
 /// Sessão de login. O token vai só no cookie do navegador; aqui fica apenas o SHA-256 dele.
@@ -70,6 +97,8 @@ model UserSettings {
   symbol       String?
   interval     String?
   showAnalysis Boolean  @default(true)
+  /// Onboarding do terminal (Plano 02 Etapa 8): concluído ou dispensado — não volta a aparecer.
+  onboardingDoneAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -84,4 +113,246 @@ model UserPreference {
   showAnalysis Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// ───────────────────────────── Plano 02 — camada comercial ─────────────────────────────
+// Sem cobrança: o gateway próprio (Etapa 7) está ADIADO. Ver docs/SAAS_DECISIONS.md.
+
+enum FeatureKind {
+  /// Liga/desliga.
+  BOOLEAN
+  /// Contador por janela (ex.: varreduras por dia).
+  QUOTA
+  /// Quantidade máxima (ex.: ativos na watchlist).
+  LIMIT
+}
+
+enum QuotaWindow {
+  DAY_UTC
+  MONTH_UTC
+}
+
+enum PlanStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SubscriptionSource {
+  /// Reservado para a integração futura com o gateway próprio (não usado nesta fase).
+  OWN_GATEWAY
+  /// Acesso concedido pelo admin, sem cobrança pelo Claritas.
+  MANUAL
+  /// Cortesia: acesso gratuito concedido pelo admin.
+  COMPLIMENTARY
+}
+
+enum SubscriptionStatus {
+  PENDING
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+  SUSPENDED
+}
+
+enum OverrideEffect {
+  ALLOW
+  DENY
+}
+
+enum GatewayEventStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  PENDING_REVIEW
+  IGNORED
+}
+
+/// Capacidade vendável. `key` é estável; `implemented=false` impede publicação de plano que a inclua.
+model Feature {
+  id          String        @id @default(cuid())
+  key         String        @unique
+  name        String
+  description String
+  kind        FeatureKind
+  window      QuotaWindow?
+  implemented Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  plans       PlanFeature[]
+}
+
+/// Oferta versionada. Versão PUBLISHED é imutável; editar = nova versão em DRAFT.
+/// Preço/moeda/periodicidade ficam nulos até aprovação comercial (D-02).
+model Plan {
+  id            String         @id @default(cuid())
+  code          String
+  version       Int            @default(1)
+  name          String
+  description   String         @default("")
+  status        PlanStatus     @default(DRAFT)
+  priceMinor    Int?
+  currency      String?
+  billingPeriod String?
+  publishedAt   DateTime?
+  archivedAt    DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  features      PlanFeature[]
+  subscriptions Subscription[]
+
+  @@unique([code, version])
+  @@index([status])
+}
+
+model PlanFeature {
+  id         String  @id @default(cuid())
+  planId     String
+  featureId  String
+  enabled    Boolean @default(true)
+  /// QUOTA: usos por janela; LIMIT: quantidade máxima. Nulo em BOOLEAN.
+  limitValue Int?
+  plan       Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature    Feature @relation(fields: [featureId], references: [id], onDelete: Restrict)
+
+  @@unique([planId, featureId])
+}
+
+/// Vínculo de acesso comercial. Uma "corrente" (PENDING/TRIALING/ACTIVE/PAST_DUE) por usuário — índice parcial
+/// na migração. O acesso termina em `accessUntil` (instante exclusivo, UTC), qualquer que seja o status.
+model Subscription {
+  id                     String             @id @default(cuid())
+  userId                 String
+  planId                 String
+  status                 SubscriptionStatus
+  source                 SubscriptionSource
+  startsAt               DateTime
+  accessUntil            DateTime
+  /// Benefícios do plano no momento da concessão: { [featureKey]: { enabled, limit } }.
+  entitlementSnapshot    Json
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  endedAt                DateTime?
+  endReason              String?
+  reason                 String
+  createdById            String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  /// Integração futura com o gateway próprio (Etapa 7 adiada): preenchidos só por eventos verificados.
+  gatewayKey             String?
+  externalSubscriptionId String?
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  plan                   Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@unique([gatewayKey, externalSubscriptionId])
+  @@index([userId, status])
+  @@index([status, accessUntil])
+  @@index([source])
+}
+
+/// Concessão ou negação individual de uma feature, sempre com prazo, motivo e autor. DENY vence ALLOW.
+model FeatureOverride {
+  id           String         @id @default(cuid())
+  userId       String
+  featureKey   String
+  effect       OverrideEffect
+  limitValue   Int?
+  startsAt     DateTime
+  endsAt       DateTime
+  reason       String
+  createdById  String
+  createdAt    DateTime       @default(now())
+  revokedAt    DateTime?
+  revokedById  String?
+  revokeReason String?
+  user         User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, featureKey])
+}
+
+/// Consumo por janela (incremento atômico condicional — ver UsageService).
+model UsageCounter {
+  userId      String
+  featureKey  String
+  windowStart DateTime
+  used        Int      @default(0)
+  updatedAt   DateTime @default(now()) @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([userId, featureKey, windowStart])
+}
+
+/// Idempotência do consumo: a mesma chave nunca conta duas vezes.
+model UsageRecord {
+  userId         String
+  featureKey     String
+  idempotencyKey String
+  windowStart    DateTime
+  createdAt      DateTime @default(now())
+
+  @@id([userId, featureKey, idempotencyKey])
+}
+
+/// Trilha administrativa append-only (trigger no banco recusa UPDATE/DELETE). Sem senha, token ou segredo.
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  /// Nulo = sistema (job, CLI); `actorLabel` descreve.
+  actorId    String?
+  actorLabel String
+  action     String
+  targetType String
+  targetId   String
+  reason     String?
+  before     Json?
+  after      Json?
+  requestId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
+}
+
+/// Eventos de produto para métricas (sem PII além do id interno).
+model ProductEvent {
+  id         String   @id @default(cuid())
+  name       String
+  userId     String?
+  props      Json?
+  occurredAt DateTime @default(now())
+
+  @@index([name, occurredAt])
+  @@index([userId, name])
+}
+
+/// Integração futura (Etapa 7 ADIADA): vínculo verificável usuário ↔ cliente no gateway próprio.
+model GatewayCustomerLink {
+  id                 String   @id @default(cuid())
+  userId             String
+  gatewayKey         String
+  externalCustomerId String
+  createdAt          DateTime @default(now())
+
+  @@unique([gatewayKey, externalCustomerId])
+  @@unique([userId, gatewayKey])
+}
+
+/// Integração futura (Etapa 7 ADIADA): inbox durável e idempotente de eventos do gateway próprio.
+model GatewayEvent {
+  id              String             @id @default(cuid())
+  gatewayKey      String
+  externalEventId String
+  eventType       String
+  status          GatewayEventStatus @default(RECEIVED)
+  payloadRef      String?
+  receivedAt      DateTime           @default(now())
+  processedAt     DateTime?
+  error           String?
+  retryCount      Int                @default(0)
+
+  @@unique([gatewayKey, externalEventId])
+  @@index([status, receivedAt])
 }

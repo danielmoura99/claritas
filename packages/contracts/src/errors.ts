@@ -15,6 +15,10 @@ export const ERROR_CODES = [
   "INVALID_CREDENTIALS",
   "EMAIL_TAKEN",
   "FORBIDDEN",
+  "ACCOUNT_BLOCKED",
+  "ENTITLEMENT_REQUIRED",
+  "QUOTA_EXCEEDED",
+  "CONFLICT",
   "INTERNAL",
 ] as const;
 export const ErrorCodeSchema = z.enum(ERROR_CODES);

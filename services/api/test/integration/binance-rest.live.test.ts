@@ -3,12 +3,12 @@ import type { FastifyInstance } from "fastify";
 import { INTERVAL_MS, type Candle } from "@claritas/contracts";
 import { buildApp } from "../../src/app";
 import { parseEnv } from "../../src/config/env";
-import { authedInject, testSessions } from "../helpers/auth";
+import { authedInject, testSessions, allowAllAccess } from "../helpers/auth";
 
 // Integração REAL com a Binance Spot pública (rede necessária). Nenhuma fixture aqui.
 let app: FastifyInstance;
 beforeAll(async () => {
-  app = await buildApp({ env: parseEnv({ LOG_LEVEL: "silent" }), logger: false, sessions: testSessions });
+  app = await buildApp({ env: parseEnv({ LOG_LEVEL: "silent" }), logger: false, sessions: testSessions, access: allowAllAccess });
 });
 afterAll(() => app.close());
 const inject = authedInject(() => app);

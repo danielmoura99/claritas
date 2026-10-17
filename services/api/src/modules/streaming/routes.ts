@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { EventEmitter } from "node:events";
 import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "ws";
 import { z } from "zod";
@@ -10,12 +11,32 @@ import type { StreamClient, StreamHub } from "./hub";
 const MAX_INBOUND_PER_SEC = 20;
 const HEARTBEAT_MS = 30_000;
 const MAX_MESSAGE_BYTES = 4_096;
+/** Janela máxima entre a perda de acesso e o fechamento do stream sem aviso do admin (D-S09). */
+export const ACCESS_RECHECK_MS = 60_000;
+/** Close code próprio: acesso comercial revogado (o cliente não deve insistir sem nova autorização). */
+export const WS_CLOSE_ACCESS_REVOKED = 4403;
 
 const StatusQuerySchema = z.object({ symbol: SymbolSchema, interval: IntervalSchema.optional() });
 
 export async function streamingRoutes(
   app: FastifyInstance,
-  { hub, market, maxSubscriptionsPerClient, allowedOrigins }: { hub: StreamHub; market: MarketService; maxSubscriptionsPerClient: number; allowedOrigins: string[] },
+  {
+    hub,
+    market,
+    maxSubscriptionsPerClient,
+    allowedOrigins,
+    stillAllowed,
+    accessEvents,
+  }: {
+    hub: StreamHub;
+    market: MarketService;
+    maxSubscriptionsPerClient: number;
+    allowedOrigins: string[];
+    /** Reavalia `terminal.access` do dono do stream (conta ativa + entitlement). */
+    stillAllowed: (userId: string) => Promise<boolean>;
+    /** Avisos de mudança de acesso feitos pela administração. */
+    accessEvents: EventEmitter;
+  },
 ) {
   app.get("/status", async (req) => {
     const { symbol, interval } = parseOrThrow(StatusQuerySchema, req.query);
@@ -52,6 +73,31 @@ export async function streamingRoutes(
     }, HEARTBEAT_MS);
     heartbeat.unref();
     socket.on("pong", () => (alive = true));
+
+    // Revalidação contínua (Plano 02 §4.6.5): não confiar só na abertura. Periódica + imediata em ação do admin.
+    const userId = req.streamUserId;
+    let closing = false;
+    const recheck = async () => {
+      if (closing || !userId) return;
+      let ok = false;
+      try {
+        ok = await stillAllowed(userId);
+      } catch (err) {
+        // Banco fora: mantém o acesso já validado (o terminal não cai por instabilidade), tenta de novo depois.
+        log.warn({ err: String(err) }, "revalidação do stream indisponível");
+        return;
+      }
+      if (ok || closing) return;
+      closing = true;
+      client.send({ type: "error", code: "ENTITLEMENT_REQUIRED", message: "acesso ao terminal encerrado" });
+      socket.close(WS_CLOSE_ACCESS_REVOKED, "access revoked");
+    };
+    const recheckTimer = setInterval(() => void recheck(), ACCESS_RECHECK_MS);
+    recheckTimer.unref();
+    const onAccessChanged = (changed: string) => {
+      if (changed === userId) void recheck();
+    };
+    accessEvents.on("changed", onAccessChanged);
 
     client.send({ type: "hello", serverTime: new Date().toISOString(), protocol: 1 });
 
@@ -105,6 +151,8 @@ export async function streamingRoutes(
 
     socket.on("close", () => {
       clearInterval(heartbeat);
+      clearInterval(recheckTimer);
+      accessEvents.off("changed", onAccessChanged);
       hub.removeClient(client);
     });
     socket.on("error", (err) => log.warn({ err: err.message }, "erro no ws do cliente"));

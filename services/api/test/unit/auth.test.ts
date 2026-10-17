@@ -8,7 +8,7 @@ import { LoginThrottle } from "../../src/modules/auth/login-throttle";
 import { StreamTickets } from "../../src/modules/auth/stream-tickets";
 import { SESSION_COOKIE, clearedSessionCookie, hashSessionToken, readSessionToken, sessionCookie } from "../../src/modules/auth/session-cookie";
 import { FakeStreamSource } from "../helpers/fake-stream";
-import { SESSION_HEADERS, TEST_USER, streamTicket, testSessions } from "../helpers/auth";
+import { SESSION_HEADERS, TEST_USER, streamTicket, testSessions, allowAllAccess } from "../helpers/auth";
 
 describe("senha (scrypt)", () => {
   it("hash com sal aleatório verifica a senha certa e recusa a errada", async () => {
@@ -94,7 +94,7 @@ describe("contratos de auth", () => {
 describe("guarda da API", () => {
   let app: FastifyInstance;
   beforeAll(async () => {
-    app = await buildApp({ env: parseEnv({ CORS_ORIGIN: "http://localhost:3000" }), logger: false, streamSource: new FakeStreamSource(), sessions: testSessions });
+    app = await buildApp({ env: parseEnv({ CORS_ORIGIN: "http://localhost:3000" }), logger: false, streamSource: new FakeStreamSource(), sessions: testSessions, access: allowAllAccess });
   });
   afterAll(() => app.close());
 
@@ -146,7 +146,7 @@ describe("guarda da API", () => {
 
 describe("limites das rotas de senha", () => {
   it("AUTH_RATE_LIMIT_PER_MINUTE vale por IP em entrar/criar conta", async () => {
-    const app = await buildApp({ env: parseEnv({ AUTH_RATE_LIMIT_PER_MINUTE: "2" }), logger: false, streamSource: new FakeStreamSource(), sessions: testSessions });
+    const app = await buildApp({ env: parseEnv({ AUTH_RATE_LIMIT_PER_MINUTE: "2" }), logger: false, streamSource: new FakeStreamSource(), sessions: testSessions, access: allowAllAccess });
     // Corpo inválido: 400 sem tocar banco, mas conta para o limite.
     const codes = [];
     for (let i = 0; i < 3; i++) codes.push((await app.inject({ method: "POST", url: "/api/v1/auth/login", payload: {} })).statusCode);

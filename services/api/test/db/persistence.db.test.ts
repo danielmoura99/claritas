@@ -11,6 +11,7 @@ import { FakeStreamSource } from "../helpers/fake-stream";
 import { exchangeInfo, jsonResponse } from "../fixtures/binance";
 import { ensureTemplateWatchlist } from "../../src/modules/watchlist/repositories";
 import { SESSION_COOKIE } from "../../src/modules/auth/session-cookie";
+import { allowAllAccess } from "../helpers/auth";
 
 // PostgreSQL REAL e LOCAL (`npm run db:local:start`). NUNCA usa DATABASE_URL, que pode ser o banco real (Neon).
 // Cada execução cria um banco NOVO e vazio com nome único, aplica as migrações (migrate deploy) e o remove no fim.
@@ -45,7 +46,8 @@ beforeAll(async () => {
   db = new Database(TEST_URL);
   // Provedor com fixtures (ativos fictícios) — o foco aqui é a persistência.
   const provider = new BinanceSpotProvider({ restUrl: "https://binance.test", timeoutMs: 500, fetchImpl: (async () => jsonResponse(exchangeInfo)) as unknown as typeof fetch });
-  app = await buildApp({ env: parseEnv({ AUTH_RATE_LIMIT_PER_MINUTE: "1000" }), logger: false, provider, streamSource: new FakeStreamSource(), database: db });
+  // Entitlements liberados: esta suíte testa persistência; o motor de acesso é coberto por saas.db.test.ts.
+  app = await buildApp({ env: parseEnv({ AUTH_RATE_LIMIT_PER_MINUTE: "1000" }), logger: false, provider, streamSource: new FakeStreamSource(), database: db, access: allowAllAccess });
 }, 120_000);
 afterAll(async () => {
   await app?.close();

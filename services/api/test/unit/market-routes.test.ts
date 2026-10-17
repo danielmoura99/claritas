@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { buildApp } from "../../src/app";
 import { parseEnv } from "../../src/config/env";
 import { FakeStreamSource } from "../helpers/fake-stream";
-import { authedInject, testSessions } from "../helpers/auth";
+import { authedInject, testSessions, allowAllAccess } from "../helpers/auth";
 import { BinanceSpotProvider } from "../../src/providers/binance/binance-provider";
 import { FIVE_MIN, T0, exchangeInfo, jsonResponse, kline, ticker } from "../fixtures/binance";
 
@@ -22,7 +22,7 @@ const fetchImpl = vi.fn(async (input: string | URL | Request) => {
 
 beforeAll(async () => {
   const provider = new BinanceSpotProvider({ restUrl: "https://binance.test", timeoutMs: 500, fetchImpl: fetchImpl as typeof fetch, now: () => T0 + 10 * FIVE_MIN });
-  app = await buildApp({ env: parseEnv({ MARKET_FEATURED_SYMBOLS: "TESTUSDT" }), logger: false, provider, streamSource: new FakeStreamSource(), sessions: testSessions });
+  app = await buildApp({ env: parseEnv({ MARKET_FEATURED_SYMBOLS: "TESTUSDT" }), logger: false, provider, streamSource: new FakeStreamSource(), sessions: testSessions, access: allowAllAccess });
 });
 afterAll(() => app.close());
 const inject = authedInject(() => app);
