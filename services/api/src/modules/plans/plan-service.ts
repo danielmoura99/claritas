@@ -79,6 +79,9 @@ export class PlanService {
       this.features(),
     ]);
     const implemented = new Set(features.filter((f) => f.implemented).map((f) => f.key));
+    // Ordem de leitura comercial: do período mais curto ao mais longo; sem período (sem preço) por último.
+    const PERIOD_ORDER: Record<string, number> = { MONTHLY: 1, QUARTERLY: 2, SEMIANNUAL: 3, YEARLY: 4 };
+    rows.sort((a, b) => (PERIOD_ORDER[a.billingPeriod ?? ""] ?? 9) - (PERIOD_ORDER[b.billingPeriod ?? ""] ?? 9) || a.code.localeCompare(b.code));
     return rows.map((r) => {
       const dto = planToDto(r);
       return {
